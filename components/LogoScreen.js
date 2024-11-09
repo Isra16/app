@@ -36,7 +36,7 @@ const LogoScreen = () => {
     }
   
     try {
-      const response = await fetch('http://10.0.2.2:808/login', { // Ensure your server address is correct
+      const response = await fetch('https://jeywb7rn6x.us-east-1.awsapprunner.com/login', { // Ensure your server address is correct
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

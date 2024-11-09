@@ -48,7 +48,7 @@ app.post('/login', (req, res) => {
     const { id, password } = req.body;
     console.log('Received user data for login:', req.body);
 
-    const sql = 'SELECT * FROM user WHERE id = ?';
+    const sql = 'SELECT * FROM users WHERE id = ?';
     conn.query(sql, [id], (error, results) => {
         if (error) {
             console.error('Error querying database:', error);
@@ -109,7 +109,7 @@ app.put('/users', (req, res) => {
   const { id, oldPassword, newPassword } = req.body;
   console.log(`Received request to update password for user ID: ${id}`);
 
-  const fetchUserSql = 'SELECT * FROM user WHERE id = ?';
+  const fetchUserSql = 'SELECT * FROM users WHERE id = ?';
   conn.query(fetchUserSql, [id], (error, results) => {
       if (error) {
           console.error('Error querying database:', error);

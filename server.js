@@ -1,4 +1,3 @@
-require('dotenv').config();
 const express = require('express');
 const mysql = require('mysql');
 const bodyParser = require('body-parser');
@@ -9,13 +8,13 @@ app.use(cors());
 app.use(bodyParser.json({ type: 'application/json' }));
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Create MySQL connection using environment variables
+// Create MySQL connection
 const conn = mysql.createConnection({
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME
+    host: 'database-1.czyq0i2sme25.us-east-1.rds.amazonaws.com',
+    port: '3306',
+    user: 'admin',
+    password: 'Softix$123',
+    database: 'my_db'
 });
 
 // Start the server
@@ -180,4 +179,15 @@ app.delete('/clients/:name', (req, res) => {
         }
         res.status(200).json({ message: 'Client deleted successfully' });
     });
+});
+
+// Catch-all route for handling 404 errors
+app.use((req, res) => {
+    res.status(404).json({ message: 'Route not found' });
+});
+
+// Error-handling middleware for JSON responses
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({ error: 'Something went wrong!' });
 });

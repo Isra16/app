@@ -21,7 +21,7 @@ const AddClients = ({ navigation }) => {
             const adjustedDate = new Date(date);
             adjustedDate.setUTCHours(0, 0, 0, 0);
 
-            const response = await fetch('http://10.0.2.2:808/clients', {
+            const response = await fetch('https://jeywb7rn6x.us-east-1.awsapprunner.com/clients', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

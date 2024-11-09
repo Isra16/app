@@ -31,7 +31,7 @@ const AdminPassword = () => {
     }
 
     try {
-      const response = await fetch('http://10.0.2.2:808/users', { // Your API endpoint
+      const response = await fetch('https://jeywb7rn6x.us-east-1.awsapprunner.com/users', { // Your API endpoint
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

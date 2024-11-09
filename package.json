@@ -1,0 +1,48 @@
+{
+  "name": "m",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "expo start --dev-client",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "@expo/metro-runtime": "~3.2.3",
+    "@react-native-async-storage/async-storage": "^2.0.0",
+    "@react-native-community/datetimepicker": "^8.2.0",
+    "@react-native-picker/picker": "^2.8.1",
+    "axios": "^1.7.7",
+    "bcrypt": "^5.1.1",
+    "body-parser": "^1.20.3",
+    "build": "^0.1.4",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "expo": "~51.0.28",
+    "expo-status-bar": "~1.12.1",
+    "express": "^4.21.0",
+    "express-session": "^1.18.1",
+    "jsonwebtoken": "^9.0.2",
+    "mysql": "^2.18.1",
+    "mysql2": "^3.11.3",
+    "mysqli": "^3.1.4",
+    "nodemon": "^3.1.7",
+    "picker": "^0.1.4",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-native": "0.74.5",
+    "react-native-sqlite-storage": "^6.0.1",
+    "react-native-web": "~0.19.10"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.20.0",
+    "@expo/vector-icons": "^14.0.3",
+    "@react-navigation/native": "*",
+    "@react-navigation/native-stack": "*",
+    "react-native-paper": "4.9.2",
+    "react-native-safe-area-context": "4.10.5",
+    "react-native-screens": "3.31.1"
+  },
+  "private": true
+}

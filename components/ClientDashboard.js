@@ -22,7 +22,7 @@ const ClientDashboard = ({ navigation }) => {
       setLoading(true); // Start loading
     
       try {
-        const response = await fetch('http://10.0.2.2:808/client'); // API endpoint
+        const response = await fetch('https://jeywb7rn6x.us-east-1.awsapprunner.com/client'); // API endpoint
     
         // Throw error if response is not ok
         if (!response.ok) throw new Error('Failed to fetch data');

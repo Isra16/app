@@ -32,7 +32,7 @@ const ClientDetails = ({ route, navigation }) => {
         try {
             const selectedDate = date;
 
-            const response = await fetch(`http://10.0.2.2:808/clients`, {
+            const response = await fetch(`https://jeywb7rn6x.us-east-1.awsapprunner.com/clients`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -71,7 +71,7 @@ const ClientDetails = ({ route, navigation }) => {
                 text: 'OK',
                 onPress: async () => {
                     try {
-                        const response = await fetch(`http://10.0.2.2:808/clients/${encodeURIComponent(client.name)}`, {
+                        const response = await fetch(`https://jeywb7rn6x.us-east-1.awsapprunner.com/clients/${encodeURIComponent(client.name)}`, {
                             method: 'DELETE',
                         });
 

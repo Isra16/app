@@ -10,49 +10,94 @@ import {
   Alert
 } from 'react-native';
 import Footer from "./Footer";
+import AWS from 'aws-sdk/dist/aws-sdk-react-native';
+import Icon from 'react-native-vector-icons/FontAwesome';
+import { launchImageLibrary } from 'react-native-image-picker'; // Import image picker
 
 const ClientDashboard = ({ navigation }) => {
-  const [data, setData] = useState(null); // Store fetched data
-  const [loading, setLoading] = useState(true); // Manage loading state
-  const [error, setError] = useState(null); // Manage error state
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedImage, setSelectedImage] = useState(null); // To store the selected image
 
-  // Fetch client data from backend API
   useEffect(() => {
     const fetchData = async () => {
-      setLoading(true); // Start loading
-    
+      setLoading(true);
       try {
-        const response = await fetch('https://jeywb7rn6x.us-east-1.awsapprunner.com/client'); // API endpoint
-    
-        // Throw error if response is not ok
+        const response = await fetch('https://jeywb7rn6x.us-east-1.awsapprunner.com/client');
         if (!response.ok) throw new Error('Failed to fetch data');
-    
-        const result = await response.json(); // Parse JSON response
-    
-        // Format the date to a more readable format
+        const result = await response.json();
+
         if (result.date) {
           const dateObject = new Date(result.date);
-          result.date = isNaN(dateObject) 
-            ? "Invalid date" // Set a fallback value for invalid dates
+          result.date = isNaN(dateObject)
+            ? "Invalid date"
             : dateObject.toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric',
               });
         }
-    
-        setData(result); // Store result in state
+
+        setData(result);
       } catch (err) {
-        setError(err.message); // Handle errors
-        Alert.alert("Error", err.message); // Show error alert
+        setError(err.message);
+        Alert.alert("Error", err.message);
       } finally {
-        setLoading(false); // Stop loading
+        setLoading(false);
       }
     };
-    
-    fetchData(); // Call fetch function
+
+    fetchData();
   }, []);
 
+
+  AWS.config.update({
+    accessKeyId: 'AKIA4VDBME66QWGDGC73',
+    secretAccessKey: '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',
+    region: 'us-east-1',
+  });
+  
+  const s3 = new AWS.S3();
+
+  const handleImagePick = () => {
+    launchImageLibrary(
+      { mediaType: 'photo', quality: 0.5 },
+      (response) => {
+        if (response.didCancel) {
+          console.log('User cancelled image picker');
+        } else if (response.errorCode) {
+          console.log('ImagePicker Error: ', response.errorMessage);
+        } else {
+          const selectedImage = response.assets[0].uri;
+  
+          // Prepare file for upload
+          const file = {
+            uri: selectedImage,
+            name: selectedImage.split('/').pop(),
+            type: 'image/jpeg',
+          };
+  
+          const params = {
+            Bucket: 'softixpaymentbucket',
+            Key: `uploads/${file.name}`,
+            Body: file,
+            ContentType: file.type,
+            ACL: 'public-read', // Set permissions as needed
+          };
+  
+          // Upload image to S3
+          s3.putObject(params, (err, data) => {
+            if (err) {
+              console.log('Error uploading image:', err);
+            } else {
+              console.log('Image uploaded successfully:', data);
+            }
+          });
+        }
+      },
+    );
+  };
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -79,7 +124,7 @@ const ClientDashboard = ({ navigation }) => {
           style={styles.topLeftImage}
         />
 
-        <TouchableOpacity  style={styles.topRightImage} onPress={() => navigation.navigate('LogoScreen')}>
+        <TouchableOpacity style={styles.topRightImage} onPress={() => navigation.navigate('LogoScreen')}>
           <Image
             source={require('../assets/23.png')}
             style={styles.topRightImage}
@@ -97,6 +142,17 @@ const ClientDashboard = ({ navigation }) => {
             <TouchableOpacity style={styles.payButton}>
               <Text style={styles.payButtonText}>Pay Full</Text>
             </TouchableOpacity>
+
+            <TouchableOpacity onPress={handleImagePick} style={styles.cameraButton}>
+            <Icon name="camera" size={30} color="#000" />
+            </TouchableOpacity>
+
+            {selectedImage && (
+              <Image
+                source={{ uri: selectedImage }}
+                style={styles.selectedImage}
+              />
+            )}
 
             <TouchableOpacity 
               style={styles.payButton} 
@@ -122,7 +178,7 @@ const ClientDashboard = ({ navigation }) => {
           </View>
         </View>
       </View>
-      <Footer navigation={navigation}/>
+      <Footer navigation={navigation} />
     </SafeAreaView>
   );
 };
@@ -196,6 +252,23 @@ const styles = StyleSheet.create({
   payButtonText: {
     color: 'white',
     fontWeight: 'bold',
+  },
+  cameraButton: {
+    backgroundColor: '#ff6347',
+    padding: 10,
+    borderRadius: 5,
+    marginHorizontal: 5,
+    alignItems: 'center',
+  },
+  cameraButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  selectedImage: {
+    width: 100,
+    height: 100,
+    marginTop: 10,
+    borderRadius: 10,
   },
   recentPayments: {
     marginTop: 20,

@@ -150,7 +150,6 @@ app.get("/clients", (req, res) => {
       res.status(200).json(rows);
   });
 });
-
 app.post('/clients', (req, res) => {
     const { name, amount, AmountPaid, date } = req.body;
 
@@ -158,23 +157,27 @@ app.post('/clients', (req, res) => {
         return res.status(400).json({ message: 'Missing required fields' });
     }
 
-    
-    const id = name
-        .split(' ') 
-        .slice(0, 2) 
-        .join(' ') 
-        .toLowerCase();
+    // Generate ID and Password
+    const id = name.split(' ').slice(0, 2).join('').toLowerCase(); // Generate ID
+    const password = id; // Use the same value for password (adjust as needed)
 
-    const password = id; 
-
-  
+    // SQL to insert into the database
     const sql = 'INSERT INTO client (name, id, password, amount, AmountPaid, date) VALUES (?, ?, ?, ?, ?, ?)';
     conn.query(sql, [name, id, password, amount, AmountPaid, date], (error) => {
         if (error) {
             console.error('Error inserting data:', error);
             return res.status(500).json({ message: 'Error adding client' });
         }
-        res.status(201).json({ message: 'Client added successfully', id, password });
+
+        // Respond with all client details
+        res.status(201).json({
+            message: 'Client added successfully',
+            id,
+            password,
+            name,
+            amount,
+            date,
+        });
     });
 });
 

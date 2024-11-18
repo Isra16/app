@@ -17,10 +17,18 @@ const AddClients = ({ navigation }) => {
             setErrors(newErrors);
             return;
         }
+    
         try {
             const adjustedDate = new Date(date);
             adjustedDate.setUTCHours(0, 0, 0, 0);
-
+    
+            // Extract the first two words from the business name for ID and password
+            const businessId = name
+                .split(' ') // Split the name by spaces
+                .slice(0, 2) // Take the first two words
+                .join(' ') // Join them back with a space
+                .toLowerCase(); // Convert to lowercase for consistency
+    
             const response = await fetch('https://jeywb7rn6x.us-east-1.awsapprunner.com/clients', {
                 method: 'POST',
                 headers: {
@@ -28,16 +36,18 @@ const AddClients = ({ navigation }) => {
                 },
                 body: JSON.stringify({
                     name: name,
+                    id: businessId, // Send the generated ID
+                    password: businessId, // Use the same ID as the password
                     amount: amount,
                     AmountPaid: AmountPaid,
                     date: adjustedDate.toISOString().split('T')[0],
                 }),
             });
-
+    
             const textResponse = await response.text();
             console.log('Raw response:', textResponse);
             const result = JSON.parse(textResponse);
-
+    
             if (response.ok) {
                 Alert.alert('Success', 'Client Added successfully');
                 navigation.navigate('Dashboard');
@@ -50,7 +60,7 @@ const AddClients = ({ navigation }) => {
             navigation.navigate('Dashboard');
         }
     };
-
+    
     const validateInputs = (name, amount, AmountPaid) => {
         const newErrors = {};
         if (!name) {

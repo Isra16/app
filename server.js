@@ -206,7 +206,6 @@ app.put('/clients', (req, res) => {
   });
 });
 
-// Delete a client
 app.delete('/clients/:name', (req, res) => {
   const clientName = decodeURIComponent(req.params.name);
   const sql = 'DELETE FROM client WHERE name = ?';
@@ -221,3 +220,28 @@ app.delete('/clients/:name', (req, res) => {
       res.status(200).json({ message: 'Client deleted successfully' });
   });
 });
+
+app.post('/clients', (req, res) => {
+    const { id, amountPaid } = req.body;
+  
+    if (!id || amountPaid === undefined) {
+      return res.status(400).json({ message: 'Client ID and AmountPaid are required' });
+    }
+  
+    // SQL query to update the amountPaid for a specific client
+    const query = 'UPDATE clients SET AmountPaid = ? WHERE id = ?';
+  
+    db.query(query, [amountPaid, id], (err, result) => {
+      if (err) {
+        console.error('Error updating AmountPaid:', err);
+        return res.status(500).json({ message: 'Failed to update AmountPaid' });
+      }
+  
+      // If the query was successful
+      if (result.affectedRows > 0) {
+        return res.status(200).json({ message: 'Amount Paid updated successfully' });
+      } else {
+        return res.status(404).json({ message: 'Client not found' });
+      }
+    });
+  });

@@ -151,24 +151,34 @@ app.get("/clients", (req, res) => {
   });
 });
 
-// Add a new client
 app.post('/clients', (req, res) => {
-  const { name, amount, AmountPaid, date } = req.body;
-  if (!name || !amount || AmountPaid == null || !date) {
-      return res.status(400).json({ message: 'Missing required fields' });
-  }
+    const { name, amount, AmountPaid, date } = req.body;
 
-  const sql = 'INSERT INTO client (name, amount, AmountPaid, date) VALUES (?, ?, ?, ?)';
-  conn.query(sql, [name, amount, AmountPaid, date], (error) => {
-      if (error) {
-          console.error('Error inserting data:', error);
-          return res.status(500).json({ message: 'Error adding client' });
-      }
-      res.status(201).json({ message: 'Client added successfully' });
-  });
+    if (!name || !amount || AmountPaid == null || !date) {
+        return res.status(400).json({ message: 'Missing required fields' });
+    }
+
+    
+    const id = name
+        .split(' ') 
+        .slice(0, 2) 
+        .join(' ') 
+        .toLowerCase();
+
+    const password = id; 
+
+  
+    const sql = 'INSERT INTO client (name, id, password, amount, AmountPaid, date) VALUES (?, ?, ?, ?, ?, ?)';
+    conn.query(sql, [name, id, password, amount, AmountPaid, date], (error) => {
+        if (error) {
+            console.error('Error inserting data:', error);
+            return res.status(500).json({ message: 'Error adding client' });
+        }
+        res.status(201).json({ message: 'Client added successfully', id, password });
+    });
 });
 
-// Update client information
+
 app.put('/clients', (req, res) => {
   const { name, amount, newName, dueDate } = req.body;
   if (!name || amount == null || !newName || !dueDate) {

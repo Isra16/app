@@ -12,7 +12,7 @@ const Clientd = ({ route, navigation }) => {
     const updateAmountPaid = async () => {
         try {
             const response = await fetch('https://jeywb7rn6x.us-east-1.awsapprunner.com/clients', {
-                method: 'POST',
+                method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                 },
@@ -25,9 +25,10 @@ const Clientd = ({ route, navigation }) => {
             const result = await response.json();
 
             if (response.ok) {
+                setAmountPaid(newAmountPaid); // Update local state
                 Alert.alert('Success', 'Amount Paid updated successfully!');
-                setModalVisible(false);  // Close modal on success
-                navigation.goBack();
+                setModalVisible(false); // Close modal
+                navigation.goBack(); // Navigate back
             } else {
                 Alert.alert('Error', result.message || 'Failed to update Amount Paid');
             }
@@ -45,7 +46,6 @@ const Clientd = ({ route, navigation }) => {
                 <Text style={styles.detailText}>Amount Paid: {amountPaid}</Text>
                 <Text style={styles.detailText}>Balance: {balance}</Text>
                 <Text style={styles.detailText}>Due Date: {new Date(client.date).toLocaleDateString()}</Text>
-                
                 <Button title="Update Amount Paid" onPress={() => setModalVisible(true)} />
             </View>
 
@@ -62,7 +62,7 @@ const Clientd = ({ route, navigation }) => {
                             style={styles.input}
                             keyboardType="numeric"
                             value={newAmountPaid.toString()}
-                            onChangeText={text => setNewAmountPaid(Number(text))}
+                            onChangeText={(text) => setNewAmountPaid(Number(text))}
                         />
                         <Button title="Save" onPress={updateAmountPaid} />
                         <Button title="Cancel" onPress={() => setModalVisible(false)} />

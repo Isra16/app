@@ -4,7 +4,7 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const session = require('express-session');
 const multer = require('multer');
-const AWS = require('aws-sdk');
+const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 
 const app = express();
 
@@ -22,12 +22,13 @@ app.use(session({
 }));
 
 // AWS S3 configuration
-AWS.config.update({
-    accessKeyId: 'AKIA4VDBME66RJUJSBFM',
-    secretAccessKey: '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',
+const s3Client = new S3Client({
     region: 'us-east-1',
+    credentials: {
+        accessKeyId: 'AKIA4VDBME66RJUJSBFM',
+        secretAccessKey: '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',
+    },
 });
-const s3 = new AWS.S3();
 const bucketName = 'softixp';
 
 // Multer setup to handle file uploads in memory
@@ -119,31 +120,36 @@ app.put('/clients/update', (req, res) => {
 
 
 // File upload route
-app.post('/uploads', upload.single('file'), (req, res) => {
+app.post('/uploads', upload.single('file'), async (req, res) => {
     const { file } = req;
-    if (!file) return res.status(400).json({ message: 'No file uploaded' });
+    if (!file) {
+        return res.status(400).json({ message: 'No file uploaded' });
+    }
 
-    const params = {
-        Bucket: bucketName,
-        Key: `${Date.now()}-${file.originalname}`, // Unique file name
-        Body: file.buffer,
-        ContentType: file.mimetype,
-    };
+    const fileKey = `${Date.now()}-${file.originalname}`; // Unique file name
 
-    s3.upload(params, (err, data) => {
-        if (err) {
-            console.error('S3 Upload Error:', err);
-            return res.status(500).json({ message: 'Error uploading file to S3' });
-        }
+    try {
+        // Upload to S3
+        const uploadParams = {
+            Bucket: bucketName,
+            Key: fileKey,
+            Body: file.buffer,
+            ContentType: file.mimetype,
+        };
+        await s3Client.send(new PutObjectCommand(uploadParams));
+        const fileUrl = `https://${bucketName}.s3.amazonaws.com/${fileKey}`;
 
         // Save the file URL to MySQL database
         const sql = 'INSERT INTO uploads (image_url) VALUES (?)';
-        conn.query(sql, [data.Location], (error) => {
+        conn.query(sql, [fileUrl], (error) => {
             if (error) {
                 console.error('MySQL Insert Error:', error);
                 return res.status(500).json({ message: 'Error saving file URL' });
             }
-            res.status(200).json({ url: data.Location }); // Respond with S3 file URL
+            res.status(200).json({ url: fileUrl }); // Respond with S3 file URL
         });
-    });
+    } catch (err) {
+        console.error('S3 Upload Error:', err);
+        res.status(500).json({ message: 'Error uploading file to S3' });
+    }
 });

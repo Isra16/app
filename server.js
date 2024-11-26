@@ -8,10 +8,12 @@ const AWS = require('aws-sdk');
 
 const app = express();
 
-
+// Enable CORS
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
+// Session setup
 app.use(session({
     secret: 'a8D9!Xy29@kLpQr35$Ns1wZ4t8Uv*ByL',
     resave: false,
@@ -19,7 +21,7 @@ app.use(session({
     cookie: { secure: false }
 }));
 
-
+// AWS S3 configuration
 AWS.config.update({
     accessKeyId: 'AKIA4VDBME66RJUJSBFM',
     secretAccessKey: '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',
@@ -28,11 +30,11 @@ AWS.config.update({
 const s3 = new AWS.S3();
 const bucketName = 'softixp';
 
-
+// Multer setup to handle file uploads in memory
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-
+// MySQL database connection
 const conn = mysql.createConnection({
     host: 'database-1.czyq0i2sme25.us-east-1.rds.amazonaws.com',
     port: '3306',
@@ -40,7 +42,6 @@ const conn = mysql.createConnection({
     password: 'Softix$123',
     database: 'my_db'
 });
-
 
 conn.connect((error) => {
     if (error) {
@@ -50,11 +51,10 @@ conn.connect((error) => {
     }
 });
 
-
-const server = app.listen(808, () => {
-    console.log(`Server started on http://localhost:808`);
+// Start the server
+const server = app.listen(8080, () => {
+    console.log(`Server started on http://localhost:8080`);
 });
-
 
 app.post('/login', (req, res) => {
     const { id, password } = req.body;
@@ -118,13 +118,14 @@ app.put('/clients/update', (req, res) => {
 });
 
 
+// File upload route
 app.post('/uploads', upload.single('file'), (req, res) => {
     const { file } = req;
     if (!file) return res.status(400).json({ message: 'No file uploaded' });
 
     const params = {
         Bucket: bucketName,
-        Key: `${Date.now()}-${file.originalname}`,
+        Key: `${Date.now()}-${file.originalname}`, // Unique file name
         Body: file.buffer,
         ContentType: file.mimetype,
     };
@@ -135,13 +136,14 @@ app.post('/uploads', upload.single('file'), (req, res) => {
             return res.status(500).json({ message: 'Error uploading file to S3' });
         }
 
+        // Save the file URL to MySQL database
         const sql = 'INSERT INTO uploads (image_url) VALUES (?)';
         conn.query(sql, [data.Location], (error) => {
             if (error) {
                 console.error('MySQL Insert Error:', error);
                 return res.status(500).json({ message: 'Error saving file URL' });
             }
-            res.status(200).json({ url: data.Location });
+            res.status(200).json({ url: data.Location }); // Respond with S3 file URL
         });
     });
 });

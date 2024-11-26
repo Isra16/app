@@ -15,6 +15,7 @@ import Clientd from './components/Clientd';
 import NotificationsA from './components/admin/AdminNotify';
 import UserModalA from './components/admin/AdminUModal';
 import ChangeOldPassword from './components/admin/AdminPassword';
+import Picture from './components/Picture';
 
 const Stack = createNativeStackNavigator();
 
@@ -60,6 +61,7 @@ const App = () => {
           component={ChangeOldPassword} 
           options={{ headerShown: true }} 
         />
+       <Stack.Screen name="Picture" component={Picture} options={{headerShown:true}}/>
       </Stack.Navigator>
     </NavigationContainer>
   );

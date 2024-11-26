@@ -32,7 +32,7 @@ const Picture = () => {
     });
 
     try {
-      const res = await axios.post('https://jeywb7rn6x.us-east-1.awsapprunner.com/upload', formData, {
+      const res = await axios.post('https://jeywb7rn6x.us-east-1.awsapprunner.com/uploads', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -40,9 +40,11 @@ const Picture = () => {
 
       if (res.data && res.data.url) {
         setUploadUrl(res.data.url);
+        setSuccessMessage('Image uploaded successfully!'); // Set success message
       }
     } catch (error) {
       console.error('Error uploading image:', error);
+      setSuccessMessage('Failed to upload image.'); // Set error message
     } finally {
       setIsUploading(false);
     }

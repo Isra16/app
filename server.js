@@ -11,7 +11,6 @@ const app = express();
 const storage = multer.memoryStorage()
 const upload = multer({ storage: storage })
 
-// Enable CORS for cross-origin requests
 app.use(cors());
 app.use(bodyParser.json({ type: 'application/json' }));
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -32,8 +31,6 @@ AWS.config.update({
 const s3 = new AWS.S3();
 const bucketName = 'softixp';
 
-
-// Create MySQL connection
 const conn = mysql.createConnection({
     host: 'database-1.czyq0i2sme25.us-east-1.rds.amazonaws.com',
     port: '3306',
@@ -42,14 +39,12 @@ const conn = mysql.createConnection({
     database: 'my_db'
 });
 
-// Start the server
 const server = app.listen(808, function () {
     const host = server.address().address || 'fincloud';
     const port = server.address().port;
     console.log(`Server started at http://${host}:${port}`);
 });
 
-// Connect to MySQL database
 conn.connect(function (error) {
     if (error) {
         console.error('Error connecting to the database:', error);
@@ -58,12 +53,12 @@ conn.connect(function (error) {
     }
 });
 
-
+// Login for clients
 app.post('/login', (req, res) => {
     const { id, password } = req.body;
-    console.log('Received user data for login:', req.body);
+    console.log('Received client data for login:', req.body);
 
-    const sql = 'SELECT * FROM user WHERE id = ?';
+    const sql = 'SELECT * FROM client WHERE id = ?';
     conn.query(sql, [id], (error, results) => {
         if (error) {
             console.error('Error querying database:', error);
@@ -71,34 +66,35 @@ app.post('/login', (req, res) => {
         }
 
         if (results.length > 0) {
-            const user = results[0];
-            if (password === user.password) {
-                req.session.userId = user.id; // Store user ID in session
-                console.log('User authenticated:', user);
+            const client = results[0];
+            if (password === client.password) {
+                req.session.clientId = client.id; // Store client ID in session
+                console.log('Client authenticated:', client);
                 return res.status(200).json({ message: 'Login successful' });
             } else {
                 console.log('Authentication failed: Invalid credentials');
                 return res.status(401).json({ message: 'Invalid credentials' });
             }
         } else {
-            console.log('Authentication failed: User not found');
+            console.log('Authentication failed: Client not found');
             return res.status(401).json({ message: 'Invalid credentials' });
         }
     });
 });
 
+// Get client data
 app.get('/client', (req, res) => {
-    // Check if user is logged in
-    if (!req.session.userId) {
+    // Check if client is logged in
+    if (!req.session.clientId) {
         return res.status(401).json({ message: 'Please log in to access client data' });
     }
 
-    const userId = req.session.userId; // Get the logged-in user's ID
-    console.log(`Fetching client data for client name equal to user_id: ${userId}`);
+    const clientId = req.session.clientId; // Get the logged-in client's ID
+    console.log(`Fetching client data for client name equal to client_id: ${clientId}`);
 
-    // Query to check if user_id is equal to client name and fetch data
+    // Query to check if client_id is equal to client name and fetch data
     const query = 'SELECT name, amount, date FROM client WHERE name = ?';
-    conn.query(query, [userId], (err, result) => {
+    conn.query(query, [clientId], (err, result) => {
         if (err) {
             console.error('Database error:', err);
             return res.status(500).json({ error: 'Database error' });
@@ -107,53 +103,53 @@ app.get('/client', (req, res) => {
         // Log the result to verify data
         console.log('Query result:', result);
 
-        // Check if the user_id and name combination was found
+        // Check if the client_id and name combination was found
         if (result.length === 0) {
-            console.log(`No client found with name equal to user_id "${userId}"`);
+            console.log(`No client found with name equal to client_id "${clientId}"`);
             return res.status(404).json({ message: 'Client not found' });
         }
 
-        console.log(`Client found: ${result[0].name} for user_id ${userId}`);
+        console.log(`Client found: ${result[0].name} for client_id ${clientId}`);
         res.json(result[0]);
     });
 });
 
+// Update client password
+app.put('/clients', (req, res) => {
+    const { id, oldPassword, newPassword } = req.body;
+    console.log(`Received request to update password for client ID: ${id}`);
 
-// Update user password
-app.put('/users', (req, res) => {
-  const { id, oldPassword, newPassword } = req.body;
-  console.log(`Received request to update password for user ID: ${id}`);
+    const fetchClientSql = 'SELECT * FROM client WHERE id = ?';
+    conn.query(fetchClientSql, [id], (error, results) => {
+        if (error) {
+            console.error('Error querying database:', error);
+            return res.status(500).json({ message: 'Database error' });
+        }
 
-  const fetchUserSql = 'SELECT * FROM user WHERE id = ?';
-  conn.query(fetchUserSql, [id], (error, results) => {
-      if (error) {
-          console.error('Error querying database:', error);
-          return res.status(500).json({ message: 'Database error' });
-      }
+        if (results.length === 0) {
+            console.log('Client not found');
+            return res.status(404).json({ message: 'Client not found' });
+        }
 
-      if (results.length === 0) {
-          console.log('User not found');
-          return res.status(404).json({ message: 'User not found' });
-      }
+        const client = results[0];
+        if (client.password !== oldPassword) {
+            console.log('Password update failed: Incorrect old password');
+            return res.status(401).json({ message: 'Incorrect old password' });
+        }
 
-      const user = results[0];
-      if (user.password !== oldPassword) {
-          console.log('Password update failed: Incorrect old password');
-          return res.status(401).json({ message: 'Incorrect old password' });
-      }
+        const updatePasswordSql = 'UPDATE client SET password = ? WHERE id = ?';
+        conn.query(updatePasswordSql, [newPassword, id], (updateError, updateResult) => {
+            if (updateError) {
+                console.error('Error updating password:', updateError);
+                return res.status(500).json({ message: 'Failed to update password' });
+            }
 
-      const updatePasswordSql = 'UPDATE user SET password = ? WHERE id = ?';
-      conn.query(updatePasswordSql, [newPassword, id], (updateError, updateResult) => {
-          if (updateError) {
-              console.error('Error updating password:', updateError);
-              return res.status(500).json({ message: 'Failed to update password' });
-          }
-
-          console.log(`Password updated successfully for user ID: ${id}`);
-          res.status(200).json({ message: 'Password updated successfully' });
-      });
-  });
+            console.log(`Password updated successfully for client ID: ${id}`);
+            res.status(200).json({ message: 'Password updated successfully' });
+        });
+    });
 });
+
 
 // Fetch all clients
 app.get("/clients", (req, res) => {
@@ -165,6 +161,7 @@ app.get("/clients", (req, res) => {
       res.status(200).json(rows);
   });
 });
+
 app.post('/clients', (req, res) => {
     const { name, amount, AmountPaid, date } = req.body;
 

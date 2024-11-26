@@ -38,8 +38,6 @@ const Picture = () => {
     const formData = new FormData();
     formData.append('file', {
       uri: imageUri,
-      type: 'image/jpeg', // Assuming JPEG, you can modify based on the image type
-      name: 'image.jpg',
     });
 
     try {

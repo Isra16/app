@@ -3,33 +3,35 @@ const mysql = require('mysql');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const session = require('express-session');
-const multer= require('multer');
-const fs = require('fs');
-const path = require('path');
+const multer = require('multer');
 const AWS = require('aws-sdk');
+
 const app = express();
-const storage = multer.memoryStorage()
-const upload = multer({ storage: storage })
+
 
 app.use(cors());
-app.use(bodyParser.json({ type: 'application/json' }));
+app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-
 app.use(session({
     secret: 'a8D9!Xy29@kLpQr35$Ns1wZ4t8Uv*ByL',
     resave: false,
     saveUninitialized: true,
-    cookie: { secure: false } 
+    cookie: { secure: false }
 }));
+
 
 AWS.config.update({
     accessKeyId: 'AKIA4VDBME66RJUJSBFM',
     secretAccessKey: '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',
     region: 'us-east-1',
 });
-
 const s3 = new AWS.S3();
 const bucketName = 'softixp';
+
+
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
+
 
 const conn = mysql.createConnection({
     host: 'database-1.czyq0i2sme25.us-east-1.rds.amazonaws.com',
@@ -39,13 +41,8 @@ const conn = mysql.createConnection({
     database: 'my_db'
 });
 
-const server = app.listen(808, function () {
-    const host = server.address().address || 'fincloud';
-    const port = server.address().port;
-    console.log(`Server started at http://${host}:${port}`);
-});
 
-conn.connect(function (error) {
+conn.connect((error) => {
     if (error) {
         console.error('Error connecting to the database:', error);
     } else {
@@ -53,234 +50,98 @@ conn.connect(function (error) {
     }
 });
 
-// Login for clients
+
+const server = app.listen(808, () => {
+    console.log(`Server started on http://localhost:808`);
+});
+
+
 app.post('/login', (req, res) => {
     const { id, password } = req.body;
-    console.log('Received client data for login:', req.body);
 
-    const sql = 'SELECT * FROM client WHERE id = ?';
+    const sql = 'SELECT * FROM user WHERE id = ?';
     conn.query(sql, [id], (error, results) => {
-        if (error) {
-            console.error('Error querying database:', error);
-            return res.status(500).json({ message: 'Error during authentication' });
-        }
-
-        if (results.length > 0) {
-            const client = results[0];
-            if (password === client.password) {
-                req.session.clientId = client.id; // Store client ID in session
-                console.log('Client authenticated:', client);
-                return res.status(200).json({ message: 'Login successful' });
-            } else {
-                console.log('Authentication failed: Invalid credentials');
-                return res.status(401).json({ message: 'Invalid credentials' });
-            }
-        } else {
-            console.log('Authentication failed: Client not found');
+        if (error) return res.status(500).json({ message: 'Database error' });
+        if (results.length === 0 || results[0].password !== password) {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
+        req.session.userId = results[0].id;
+        res.status(200).json({ message: 'Login successful' });
     });
 });
 
-// Get client data
+
 app.get('/client', (req, res) => {
-    // Check if client is logged in
-    if (!req.session.clientId) {
-        return res.status(401).json({ message: 'Please log in to access client data' });
-    }
+    if (!req.session.userId) return res.status(401).json({ message: 'Please log in' });
 
-    const clientId = req.session.clientId; // Get the logged-in client's ID
-    console.log(`Fetching client data for client name equal to client_id: ${clientId}`);
-
-    // Query to check if client_id is equal to client name and fetch data
-    const query = 'SELECT name, amount, date FROM client WHERE name = ?';
-    conn.query(query, [clientId], (err, result) => {
-        if (err) {
-            console.error('Database error:', err);
-            return res.status(500).json({ error: 'Database error' });
-        }
-
-        // Log the result to verify data
-        console.log('Query result:', result);
-
-        // Check if the client_id and name combination was found
-        if (result.length === 0) {
-            console.log(`No client found with name equal to client_id "${clientId}"`);
-            return res.status(404).json({ message: 'Client not found' });
-        }
-
-        console.log(`Client found: ${result[0].name} for client_id ${clientId}`);
-        res.json(result[0]);
+    const sql = 'SELECT name, amount, date FROM client WHERE name = ?';
+    conn.query(sql, [req.session.userId], (err, result) => {
+        if (err) return res.status(500).json({ message: 'Database error' });
+        if (result.length === 0) return res.status(404).json({ message: 'Client not found' });
+        res.status(200).json(result[0]);
     });
 });
 
-// Update client password
-app.put('/clients', (req, res) => {
-    const { id, oldPassword, newPassword } = req.body;
-    console.log(`Received request to update password for client ID: ${id}`);
-
-    const fetchClientSql = 'SELECT * FROM client WHERE id = ?';
-    conn.query(fetchClientSql, [id], (error, results) => {
-        if (error) {
-            console.error('Error querying database:', error);
-            return res.status(500).json({ message: 'Database error' });
-        }
-
-        if (results.length === 0) {
-            console.log('Client not found');
-            return res.status(404).json({ message: 'Client not found' });
-        }
-
-        const client = results[0];
-        if (client.password !== oldPassword) {
-            console.log('Password update failed: Incorrect old password');
-            return res.status(401).json({ message: 'Incorrect old password' });
-        }
-
-        const updatePasswordSql = 'UPDATE client SET password = ? WHERE id = ?';
-        conn.query(updatePasswordSql, [newPassword, id], (updateError, updateResult) => {
-            if (updateError) {
-                console.error('Error updating password:', updateError);
-                return res.status(500).json({ message: 'Failed to update password' });
-            }
-
-            console.log(`Password updated successfully for client ID: ${id}`);
-            res.status(200).json({ message: 'Password updated successfully' });
-        });
-    });
-});
-
-
-// Fetch all clients
-app.get("/clients", (req, res) => {
-  conn.query("SELECT * FROM client", (error, rows) => {
-      if (error) {
-          console.error('Error fetching data:', error);
-          return res.status(500).json({ message: 'Error fetching data' });
-      }
-      res.status(200).json(rows);
-  });
-});
 
 app.post('/clients', (req, res) => {
     const { name, amount, AmountPaid, date } = req.body;
-
     if (!name || !amount || AmountPaid == null || !date) {
         return res.status(400).json({ message: 'Missing required fields' });
     }
 
-    // Generate ID and Password
-    const id = name.split(' ').slice(0, 2).join('').toLowerCase(); // Generate ID
-    const password = id; // Use the same value for password (adjust as needed)
-
-    // SQL to insert into the database
+    const id = name.split(' ').slice(0, 2).join('').toLowerCase();
     const sql = 'INSERT INTO client (name, id, password, amount, AmountPaid, date) VALUES (?, ?, ?, ?, ?, ?)';
-    conn.query(sql, [name, id, password, amount, AmountPaid, date], (error) => {
-        if (error) {
-            console.error('Error inserting data:', error);
-            return res.status(500).json({ message: 'Error adding client' });
-        }
-
-        // Respond with all client details
-        res.status(201).json({
-            message: 'Client added successfully',
-            id,
-            password,
-            name,
-            amount,
-            date,
-        });
+    conn.query(sql, [name, id, id, amount, AmountPaid, date], (error) => {
+        if (error) return res.status(500).json({ message: 'Error adding client' });
+        res.status(201).json({ message: 'Client added successfully', id, name, amount });
     });
 });
 
 
-app.put('/clients', (req, res) => {
-  const { name, amount, newName, dueDate } = req.body;
-  if (!name || amount == null || !newName || !dueDate) {
-      return res.status(400).json({ message: 'Missing required fields' });
-  }
-
-  const parsedDueDate = new Date(dueDate);
-  if (isNaN(parsedDueDate.getTime())) {
-      return res.status(400).json({ message: 'Invalid date format' });
-  }
-
-  const sql = 'UPDATE client SET name = ?, amount = ?, date = ? WHERE name = ?';
-  conn.query(sql, [newName, amount, parsedDueDate.toISOString(), name], (error, results) => {
-      if (error) {
-          console.error('Error updating data:', error);
-          return res.status(500).json({ message: 'Error updating client' });
-      }
-      if (results.affectedRows === 0) {
-          return res.status(404).json({ message: 'Client not found' });
-      }
-      res.status(200).json({ message: `Client updated successfully: ${newName}` });
-  });
-});
-
-app.delete('/clients/:name', (req, res) => {
-  const clientName = decodeURIComponent(req.params.name);
-  const sql = 'DELETE FROM client WHERE name = ?';
-  conn.query(sql, [clientName], (error, results) => {
-      if (error) {
-          console.error('Error deleting client:', error);
-          return res.status(500).json({ message: 'Error deleting client' });
-      }
-      if (results.affectedRows === 0) {
-          return res.status(404).json({ message: 'Client not found' });
-      }
-      res.status(200).json({ message: 'Client deleted successfully' });
-  });
-});
-app.put('/clients', (req, res) => {
-    const { id, amountPaid } = req.body;
-
-    if (id == null || amountPaid == null) {
-        return res.status(400).json({ message: 'Client ID and AmountPaid are required' });
+app.put('/clients/update', (req, res) => {
+    const { name, amount, newName, dueDate } = req.body;
+    if (!name || amount == null || !newName || !dueDate) {
+        return res.status(400).json({ message: 'Missing required fields' });
     }
 
-    const query = 'UPDATE clients SET AmountPaid = ? WHERE id = ?';
+    const parsedDueDate = new Date(dueDate);
+    if (isNaN(parsedDueDate.getTime())) {
+        return res.status(400).json({ message: 'Invalid date format' });
+    }
 
-    db.query(query, [amountPaid, id], (err, result) => {
-        if (err) {
-            console.error('Error updating AmountPaid:', err);
-            return res.status(500).json({ message: 'Failed to update AmountPaid' });
-        }
-
-        if (result.affectedRows > 0) {
-            return res.status(200).json({ message: 'Amount Paid updated successfully' });
-        } else {
-            return res.status(404).json({ message: 'Client not found' });
-        }
+    const sql = 'UPDATE client SET name = ?, amount = ?, date = ? WHERE name = ?';
+    conn.query(sql, [newName, amount, parsedDueDate.toISOString(), name], (error, results) => {
+        if (error) return res.status(500).json({ message: 'Database error' });
+        if (results.affectedRows === 0) return res.status(404).json({ message: 'Client not found' });
+        res.status(200).json({ message: 'Client updated successfully' });
     });
 });
+
 
 app.post('/uploads', upload.single('file'), (req, res) => {
     const { file } = req;
-    if (!file) {
-      return res.status(400).send('No file uploaded.');
-    }
-  
+    if (!file) return res.status(400).json({ message: 'No file uploaded' });
+
     const params = {
-      Bucket: 'softixp',
-      Key: `${Date.now()}-${file.originalname}`,
-      Body: file.buffer,
-      ContentType: file.mimetype,
+        Bucket: bucketName,
+        Key: `${Date.now()}-${file.originalname}`,
+        Body: file.buffer,
+        ContentType: file.mimetype,
     };
 
     s3.upload(params, (err, data) => {
-      if (err) {
-        return res.status(500).send('Error uploading file to S3');
-      }
-  
-      const sql = 'INSERT INTO uploads (image_url) VALUES (?)';
-      const values = [data.Location];
-      db.query(sql, values, (err, result) => {
         if (err) {
-          return res.status(500).send('Error saving URL to MySQL');
+            console.error('S3 Upload Error:', err);
+            return res.status(500).json({ message: 'Error uploading file to S3' });
         }
-        res.json({ url: data.Location });
-      });
+
+        const sql = 'INSERT INTO uploads (image_url) VALUES (?)';
+        conn.query(sql, [data.Location], (error) => {
+            if (error) {
+                console.error('MySQL Insert Error:', error);
+                return res.status(500).json({ message: 'Error saving file URL' });
+            }
+            res.status(200).json({ url: data.Location });
+        });
     });
-  });
-  
+});

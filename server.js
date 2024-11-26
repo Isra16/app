@@ -3,8 +3,13 @@ const mysql = require('mysql');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const session = require('express-session');
-
+const multer= require('multer');
+const fs = require('fs');
+const path = require('path');
+const AWS = require('aws-sdk');
 const app = express();
+const storage = multer.memoryStorage()
+const upload = multer({ storage: storage })
 
 // Enable CORS for cross-origin requests
 app.use(cors());
@@ -12,11 +17,21 @@ app.use(bodyParser.json({ type: 'application/json' }));
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use(session({
-    secret: 'a8D9!Xy29@kLpQr35$Ns1wZ4t8Uv*ByL', // Replace with a secure secret key
+    secret: 'a8D9!Xy29@kLpQr35$Ns1wZ4t8Uv*ByL',
     resave: false,
     saveUninitialized: true,
-    cookie: { secure: false } // Set `true` if using HTTPS
+    cookie: { secure: false } 
 }));
+
+AWS.config.update({
+    accessKeyId: 'AKIA4VDBME66RJUJSBFM',
+    secretAccessKey: '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',
+    region: 'us-east-1',
+});
+
+const s3 = new AWS.S3();
+const bucketName = 'softixp';
+
 
 // Create MySQL connection
 const conn = mysql.createConnection({
@@ -242,3 +257,33 @@ app.put('/clients', (req, res) => {
         }
     });
 });
+
+app.post('/uploads', upload.single('file'), (req, res) => {
+    const { file } = req;
+    if (!file) {
+      return res.status(400).send('No file uploaded.');
+    }
+  
+    const params = {
+      Bucket: 'softixp',
+      Key: `${Date.now()}-${file.originalname}`,
+      Body: file.buffer,
+      ContentType: file.mimetype,
+    };
+
+    s3.upload(params, (err, data) => {
+      if (err) {
+        return res.status(500).send('Error uploading file to S3');
+      }
+  
+      const sql = 'INSERT INTO uploads (image_url) VALUES (?)';
+      const values = [data.Location];
+      db.query(sql, values, (err, result) => {
+        if (err) {
+          return res.status(500).send('Error saving URL to MySQL');
+        }
+        res.json({ url: data.Location });
+      });
+    });
+  });
+  

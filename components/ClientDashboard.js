@@ -22,7 +22,7 @@ const ClientDashboard = ({ navigation }) => {
       setLoading(true); // Start loading
     
       try {
-        const response = await fetch('https://jeywb7rn6x.us-east-1.awsapprunner.com/client'); // API endpoint
+        const response = await fetch('https://jeywb7rn6x.us-east-1.awsapprunner.com/clients'); // API endpoint
     
         // Throw error if response is not ok
         if (!response.ok) throw new Error('Failed to fetch data');
@@ -89,7 +89,7 @@ const ClientDashboard = ({ navigation }) => {
         <View style={styles.main}>
           <View style={styles.content}>
             <Text style={styles.softwareName}>{name}</Text>
-            <Text style={styles.totalAmount}>Total Amount: {amount}</Text>
+            <Text style={styles.totalAmount}>Monthly Charges: {amount}</Text>
             <Text style={styles.dueDate}>Due Date: {date}</Text>
           </View>
 
@@ -102,7 +102,7 @@ const ClientDashboard = ({ navigation }) => {
               style={styles.payButton} 
               onPress={() => navigation.navigate('PayPartial')}
             >
-              <Text style={styles.payButtonText}>Pay Partial</Text>
+              <Text style={styles.payButtonText}>Pay Monthly Charges</Text>
             </TouchableOpacity>
           </View>
 

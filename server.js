@@ -153,12 +153,17 @@ app.post('/uploads', upload.single('file'), async (req, res) => {
     const fileKey = `${Date.now()}-${file.originalname}`;
 
     try {
+        console.log("Uploading file to S3:", fileKey, file.mimetype);  // Debugging line
+
         const uploadParams = {
-            Bucket: bucketName,
+            Bucket: 'softixp',  // Ensure bucket name is loaded from .env
             Key: fileKey,
             Body: file.buffer,
             ContentType: file.mimetype,
         };
+
+        // Check if the uploadParams are correct
+        console.log("S3 Upload Params:", uploadParams);
 
         await s3Client.send(new PutObjectCommand(uploadParams));
         const fileUrl = `https://${bucketName}.s3.amazonaws.com/${fileKey}`;

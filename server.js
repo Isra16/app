@@ -131,7 +131,7 @@ app.post('/uploads', upload.single('file'), async (req, res) => {
     try {
         // Upload to S3
         const uploadParams = {
-            Bucket: bucketName,
+            Bucket: softixp,
             Key: fileKey,
             Body: file.buffer,
             ContentType: file.mimetype,

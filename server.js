@@ -121,23 +121,24 @@ app.put('/clients/update', (req, res) => {
 app.post('/uploads', upload.single('file'), async (req, res) => {
     const { file } = req;
     if (!file) {
+        console.log('No file received');
         return res.status(400).json({ message: 'No file uploaded' });
     }
+    console.log('File received:', file);
 
     const fileKey = `${Date.now()}-${file.originalname}`;
 
     try {
-        // Upload to S3
         const uploadParams = {
-            Bucket: softixp,
+            Bucket: bucketName,  // Ensure you're using the correct bucket name
             Key: fileKey,
             Body: file.buffer,
             ContentType: file.mimetype,
         };
+
         await s3Client.send(new PutObjectCommand(uploadParams));
         const fileUrl = `https://${bucketName}.s3.amazonaws.com/${fileKey}`;
 
-        // Save the file URL to MySQL database
         const sql = 'INSERT INTO uploads (image_url) VALUES (?)';
         conn.query(sql, [fileUrl], (error) => {
             if (error) {

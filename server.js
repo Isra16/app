@@ -156,7 +156,7 @@ app.post('/uploads', upload.single('file'), async (req, res) => {
         console.log("Uploading file to S3:", fileKey, file.mimetype);  // Debugging line
 
         const uploadParams = {
-            Bucket: 'softixp',  // Ensure bucket name is loaded from .env
+            Bucket: bucketName,  // Ensure bucket name is loaded from .env
             Key: fileKey,
             Body: file.buffer,
             ContentType: file.mimetype,

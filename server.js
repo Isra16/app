@@ -5,6 +5,7 @@ const cors = require('cors');
 const session = require('express-session');
 const multer = require('multer');
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+require('dotenv').config(); // Load .env file
 
 const app = express();
 
@@ -15,7 +16,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 // Session setup
 app.use(session({
-    secret: 'a8D9!Xy29@kLpQr35$Ns1wZ4t8Uv*ByL',
+    secret: process.env.SESSION_SECRET, // Use secret from .env
     resave: false,
     saveUninitialized: true,
     cookie: { secure: false }
@@ -23,13 +24,13 @@ app.use(session({
 
 // AWS S3 configuration
 const s3Client = new S3Client({
-    region: 'us-east-1',
+    region: process.env.AWS_REGION,
     credentials: {
-        accessKeyId: 'AKIA4VDBME66RJUJSBFM',
-        secretAccessKey: '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',
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
     },
 });
-const bucketName = 'softixp';
+const bucketName = process.env.S3_BUCKET_NAME;
 
 // Multer setup to handle file uploads in memory
 const storage = multer.memoryStorage();
@@ -37,11 +38,11 @@ const upload = multer({ storage });
 
 // MySQL database connection
 const conn = mysql.createConnection({
-    host: 'database-1.czyq0i2sme25.us-east-1.rds.amazonaws.com',
-    port: '3306',
-    user: 'admin',
-    password: 'Softix$123',
-    database: 'my_db'
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME
 });
 
 conn.connect((error) => {
@@ -57,6 +58,9 @@ const server = app.listen(8080, () => {
     console.log(`Server started on http://localhost:8080`);
 });
 
+// Routes
+
+// Login route
 app.post('/login', (req, res) => {
     const { id, password } = req.body;
 
@@ -71,7 +75,7 @@ app.post('/login', (req, res) => {
     });
 });
 
-
+// Get client data
 app.get('/client', (req, res) => {
     if (!req.session.userId) return res.status(401).json({ message: 'Please log in' });
 
@@ -83,7 +87,7 @@ app.get('/client', (req, res) => {
     });
 });
 
-
+// Add new client
 app.post('/clients', (req, res) => {
     const { name, amount, AmountPaid, date } = req.body;
     if (!name || !amount || AmountPaid == null || !date) {
@@ -98,26 +102,20 @@ app.post('/clients', (req, res) => {
     });
 });
 
-
+// Update client
 app.put('/clients/update', (req, res) => {
     const { name, amount, newName, dueDate } = req.body;
     if (!name || amount == null || !newName || !dueDate) {
         return res.status(400).json({ message: 'Missing required fields' });
     }
 
-    const parsedDueDate = new Date(dueDate);
-    if (isNaN(parsedDueDate.getTime())) {
-        return res.status(400).json({ message: 'Invalid date format' });
-    }
-
     const sql = 'UPDATE client SET name = ?, amount = ?, date = ? WHERE name = ?';
-    conn.query(sql, [newName, amount, parsedDueDate.toISOString(), name], (error, results) => {
+    conn.query(sql, [newName, amount, dueDate, name], (error, results) => {
         if (error) return res.status(500).json({ message: 'Database error' });
         if (results.affectedRows === 0) return res.status(404).json({ message: 'Client not found' });
         res.status(200).json({ message: 'Client updated successfully' });
     });
 });
-
 
 // File upload route
 app.post('/uploads', upload.single('file'), async (req, res) => {
@@ -126,7 +124,7 @@ app.post('/uploads', upload.single('file'), async (req, res) => {
         return res.status(400).json({ message: 'No file uploaded' });
     }
 
-    const fileKey = `${Date.now()}-${file.originalname}`; // Unique file name
+    const fileKey = `${Date.now()}-${file.originalname}`;
 
     try {
         // Upload to S3
@@ -146,7 +144,7 @@ app.post('/uploads', upload.single('file'), async (req, res) => {
                 console.error('MySQL Insert Error:', error);
                 return res.status(500).json({ message: 'Error saving file URL' });
             }
-            res.status(200).json({ url: fileUrl }); // Respond with S3 file URL
+            res.status(200).json({ url: fileUrl });
         });
     } catch (err) {
         console.error('S3 Upload Error:', err);

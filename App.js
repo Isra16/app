@@ -22,17 +22,17 @@ const Stack = createNativeStackNavigator();
 const App = () => {
   return (
     <NavigationContainer>
-      <Stack.Navigator 
-        initialRouteName="LogoScreen"  // Start the app from LogoScreen
+      <Stack.Navigator
+        initialRouteName="LogoScreen" // Start the app from LogoScreen
         screenOptions={{ headerShown: false }}
       >
         <Stack.Screen name="LogoScreen" component={LogoScreen} />
         <Stack.Screen name="UserPanel" component={UserPanel} />
         <Stack.Screen name="Notification" component={Notifications} />
-        <Stack.Screen 
-          name="ChangePassword" 
-          component={ChangePassword} 
-          options={{ headerShown: true }} 
+        <Stack.Screen
+          name="ChangePassword"
+          component={ChangePassword}
+          options={{ headerShown: true }}
         />
         <Stack.Screen
           name="PayPartial"
@@ -49,35 +49,54 @@ const App = () => {
           })}
         />
         <Stack.Screen name="Dashboard" component={Dashboard} options={{ headerShown: false }} />
-        <Stack.Screen name="Add Clients" component={AddClients} options={{ headerShown: true }} />
-<<<<<<< HEAD
-        <Stack.Screen name="ClientList" component={ClientsList} options={{ headerShown: true }} />
-        <Stack.Screen name="ClientDetails" component={ClientDetails}  options={{ headerShown: true }}/>
-        <Stack.Screen name="Payments" component={Payments}  options={{ headerShown: true }} />
-        <Stack.Screen name="Client" component={Clientd}  options={{ headerShown: true }} />
-        <Stack.Screen name="NotificationsA" component={NotificationsA} options={{ headerShown: true }} />
-        <Stack.Screen name="UserModalA" component={UserModalA} options={{ headerShown: true }} />
-=======
-        <Stack.Screen name="ClientList" component={ClientsList} />
-        <Stack.Screen name="ClientDetails" component={ClientDetails} />
-        <Stack.Screen name="Payments" component={Payments} />
-        <Stack.Screen name="Client" component={Clientd} />
-        <Stack.Screen name="NotificationsA" component={NotificationsA} />
-        <Stack.Screen name="UserModalA" component={UserModalA} />
->>>>>>> 97d9195f73ffb052c163c2b752b1ec0b802a1727
-        <Stack.Screen 
-          name="ChangeOldPassword" 
-          component={ChangeOldPassword} 
-          options={{ headerShown: true }} 
+        <Stack.Screen
+          name="Add Clients"
+          component={AddClients}
+          options={{ headerShown: true }}
         />
-<<<<<<< HEAD
-        <Stack.Screen name="Picture" component={Picture} options={{headerShown:true}}/>
-=======
-       <Stack.Screen name="Picture" component={Picture} options={{headerShown:true}}/>
->>>>>>> 97d9195f73ffb052c163c2b752b1ec0b802a1727
+        <Stack.Screen
+          name="ClientList"
+          component={ClientsList}
+          options={{ headerShown: true }}
+        />
+        <Stack.Screen
+          name="ClientDetails"
+          component={ClientDetails}
+          options={{ headerShown: true }}
+        />
+        <Stack.Screen
+          name="Payments"
+          component={Payments}
+          options={{ headerShown: true }}
+        />
+        <Stack.Screen
+          name="Client"
+          component={Clientd}
+          options={{ headerShown: true }}
+        />
+        <Stack.Screen
+          name="NotificationsA"
+          component={NotificationsA}
+          options={{ headerShown: true }}
+        />
+        <Stack.Screen
+          name="UserModalA"
+          component={UserModalA}
+          options={{ headerShown: true }}
+        />
+        <Stack.Screen
+          name="ChangeOldPassword"
+          component={ChangeOldPassword}
+          options={{ headerShown: true }}
+        />
+        <Stack.Screen
+          name="Picture"
+          component={Picture}
+          options={{ headerShown: true }}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );
-}
+};
 
 export default App;

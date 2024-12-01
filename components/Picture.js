@@ -9,7 +9,7 @@ const Picture = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
-  // Open the image picker
+
   const chooseImage = () => {
     launchImageLibrary(
       { mediaType: 'photo', maxWidth: 800, maxHeight: 800 },
@@ -25,7 +25,7 @@ const Picture = () => {
     );
   };
 
-  // Upload the image
+
   const uploadImage = async () => {
     if (!imageUri) {
       setSuccessMessage('Please select an image first.');
@@ -48,7 +48,7 @@ const Picture = () => {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
-          timeout: 10000, // Set timeout to avoid long hangs
+          timeout: 10000, 
         }
       );
 

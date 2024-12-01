@@ -5,24 +5,24 @@ const cors = require('cors');
 const session = require('express-session');
 const multer = require('multer');
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
-require('dotenv').config(); // Load .env file
+require('dotenv').config(); 
 
 const app = express();
 
-// Middleware setup
+
 app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(
     session({
-        secret: process.env.SESSION_SECRET || 'defaultsecret', // Fallback for missing env variable
+        secret: process.env.SESSION_SECRET || 'defaultsecret', 
         resave: false,
         saveUninitialized: true,
-        cookie: { secure: false }, // Set to `true` if using HTTPS
+        cookie: { secure: false },
     })
 );
 
-// AWS S3 configuration
+
 const s3Client = new S3Client({
     region: process.env.AWS_REGION,
     credentials: {
@@ -32,11 +32,11 @@ const s3Client = new S3Client({
 });
 const bucketName = process.env.S3_BUCKET_NAME;
 
-// Multer setup
+
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-// MySQL database connection
+
 const conn = mysql.createConnection({
     host: process.env.DB_HOST,
     port: process.env.DB_PORT,
@@ -53,15 +53,15 @@ conn.connect((error) => {
     }
 });
 
-// Start the server
+
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
     console.log(`Server started on http://localhost:${PORT}`);
 });
 
-// Routes
 
-// Login route
+
+
 app.post('/login', (req, res) => {
     const { id, password } = req.body;
 
@@ -83,7 +83,7 @@ app.post('/login', (req, res) => {
     });
 });
 
-// Get client data
+
 app.get('/client', (req, res) => {
     if (!req.session.userId) {
         return res.status(401).json({ message: 'Please log in' });
@@ -102,7 +102,7 @@ app.get('/client', (req, res) => {
     });
 });
 
-// Add new client
+
 app.post('/clients', (req, res) => {
     const { name, amount, AmountPaid, date } = req.body;
 
@@ -122,7 +122,7 @@ app.post('/clients', (req, res) => {
     });
 });
 
-// Update client
+
 app.put('/clients/update', (req, res) => {
     const { name, amount, newName, dueDate } = req.body;
 
@@ -143,7 +143,7 @@ app.put('/clients/update', (req, res) => {
     });
 });
 
-// File upload route
+
 app.post('/uploads', upload.single('file'), async (req, res) => {
     const { file } = req;
     if (!file) {
@@ -153,16 +153,16 @@ app.post('/uploads', upload.single('file'), async (req, res) => {
     const fileKey = `${Date.now()}-${file.originalname}`;
 
     try {
-        console.log("Uploading file to S3:", fileKey, file.mimetype);  // Debugging line
+        console.log("Uploading file to S3:", fileKey, file.mimetype);  
 
         const uploadParams = {
-            Bucket: 'softixp',  // Ensure bucket name is loaded from .env
+            Bucket: bucketName, 
             Key: fileKey,
             Body: file.buffer,
             ContentType: file.mimetype,
         };
 
-        // Check if the uploadParams are correct
+        
         console.log("S3 Upload Params:", uploadParams);
 
         await s3Client.send(new PutObjectCommand(uploadParams));

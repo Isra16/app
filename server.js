@@ -5,7 +5,6 @@ const cors = require('cors');
 const session = require('express-session');
 const multer = require('multer');
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
-const cron = require('node-cron');
 require('dotenv').config(); 
 
 const app = express();
@@ -60,31 +59,6 @@ app.listen(PORT, () => {
     console.log(`Server started on http://localhost:${PORT}`);
 });
 
-cron.schedule('0 0 28-31 * *', () => {
-    const today = new Date();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(today.getDate() + 1);
-
-    if (tomorrow.getDate() === 1) {
-        console.log('Today is the last day of the month. Running due date update...');
-        
-        const sql = `
-            UPDATE client 
-            SET date = DATE_ADD(date, INTERVAL 1 MONTH)
-            WHERE DAY(date) = 20 AND MONTH(CURDATE()) != MONTH(date)
-        `;
-        
-        conn.query(sql, (error, results) => {
-            if (error) {
-                console.error('Error updating due dates:', error);
-            } else {
-                console.log('Due dates updated successfully:', results.affectedRows);
-            }
-        });
-    } else {
-        console.log('Today is not the last day of the month. No action taken.');
-    }
-});
 
 
 

@@ -10,6 +10,7 @@ import {
   Alert 
 } from "react-native";
 import Footer from "./Footer";
+import Icon from "react-native-vector-icons/MaterialIcons"; // Importing MaterialIcons
 
 const ClientDashboard = ({ navigation }) => {
   const [data, setData] = useState(null);
@@ -63,6 +64,10 @@ const ClientDashboard = ({ navigation }) => {
 
   const { name, amount, date } = data;
 
+  const handleUpload = () => {
+    Alert.alert("Upload Picture", "This feature is under development!");
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View>
@@ -73,19 +78,25 @@ const ClientDashboard = ({ navigation }) => {
       
         <View style={styles.main}>
           <View style={styles.content}>
-            <Text style={styles.softwareName}>{name}</Text>
-            <Text style={styles.totalAmount}>Total Amount: {amount}</Text>
+            <View style={styles.nameRow}>
+              <Text style={styles.softwareName}>{name}</Text>
+              <TouchableOpacity onPress={handleUpload} style={styles.iconContainer}>
+                <Icon name="photo-camera" size={28} color="black" />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.totalAmount}>Monthly Charges: {amount}</Text>
+            <Text style={styles.totalAmount}>Amount: {amount}</Text>
             <Text style={styles.dueDate}>Due Date: {date}</Text>
           </View>
           <View style={styles.payment}>
             <TouchableOpacity style={styles.payButton}>
-            <Text style={styles.payButtonText}>Pay{"\n"}Full</Text>
+              <Text style={styles.payButtonText}>Pay Full</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.payButton}
               onPress={() => navigation.navigate("PayPartial")}
             >
-              <Text style={styles.payButtonText}>Monthly Charges</Text>
+              <Text style={styles.payButtonText}>Pay Partial</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.recentPayments}>
@@ -141,11 +152,19 @@ const styles = StyleSheet.create({
   content: {
     marginBottom: 20,
   },
-  softwareName: {
-    marginTop: 10,
-    fontSize: 20,
-    fontWeight: "bold",
+  nameRow: {
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 10,
+  },
+  iconContainer: {
+    marginTop: 10,
+    marginLeft: 140,
+  },
+  softwareName: {
+    marginTop:10,
+    fontSize: 25,
+    fontWeight: "bold",
   },
   totalAmount: {
     fontSize: 18,

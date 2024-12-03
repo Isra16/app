@@ -64,83 +64,168 @@ app.listen(PORT, () => {
 
 app.post('/login', (req, res) => {
     const { id, password } = req.body;
-
-    if (!id || !password) {
-        return res.status(400).json({ message: 'Missing ID or password' });
-    }
+    console.log('Received user data for login:', req.body);
 
     const sql = 'SELECT * FROM user WHERE id = ?';
     conn.query(sql, [id], (error, results) => {
         if (error) {
-            console.error('Database error:', error);
-            return res.status(500).json({ message: 'Database error' });
+            console.error('Error querying database:', error);
+            return res.status(500).json({ message: 'Error during authentication' });
         }
-        if (results.length === 0 || results[0].password !== password) {
+
+        if (results.length > 0) {
+            const user = results[0];
+            if (password === user.password) {
+                req.session.userId = user.id; 
+                console.log('User authenticated:', user);
+                return res.status(200).json({ message: 'Login successful' });
+            } else {
+                console.log('Authentication failed: Invalid credentials');
+                return res.status(401).json({ message: 'Invalid credentials' });
+            }
+        } else {
+            console.log('Authentication failed: User not found');
             return res.status(401).json({ message: 'Invalid credentials' });
         }
-        req.session.userId = results[0].id;
-        res.status(200).json({ message: 'Login successful' });
+    });
+});
+
+app.get('/client', (req, res) => {
+
+    if (!req.session.userId) {
+        return res.status(401).json({ message: 'Please log in to access client data' });
+    }
+
+    const userId = req.session.userId; 
+    console.log(`Fetching client data for client name equal to user_id: ${userId}`);
+
+    
+    const query = 'SELECT name, amount, date FROM client WHERE name = ?';
+    conn.query(query, [userId], (err, result) => {
+        if (err) {
+            console.error('Database error:', err);
+            return res.status(500).json({ error: 'Database error' });
+        }
+
+       
+        console.log('Query result:', result);
+
+        
+        if (result.length === 0) {
+            console.log(`No client found with name equal to user_id "${userId}"`);
+            return res.status(404).json({ message: 'Client not found' });
+        }
+
+        console.log(`Client found: ${result[0].name} for user_id ${userId}`);
+        res.json(result[0]);
     });
 });
 
 
-app.get('/client', (req, res) => {
-    if (!req.session.userId) {
-        return res.status(401).json({ message: 'Please log in' });
-    }
 
-    const sql = 'SELECT name, amount, date FROM client WHERE id = ?';
-    conn.query(sql, [req.session.userId], (err, result) => {
-        if (err) {
-            console.error('Database error:', err);
-            return res.status(500).json({ message: 'Database error' });
-        }
-        if (result.length === 0) {
-            return res.status(404).json({ message: 'Client not found' });
-        }
-        res.status(200).json(result[0]);
-    });
+app.put('/users', (req, res) => {
+  const { id, oldPassword, newPassword } = req.body;
+  console.log(`Received request to update password for user ID: ${id}`);
+
+  const fetchUserSql = 'SELECT * FROM user WHERE id = ?';
+  conn.query(fetchUserSql, [id], (error, results) => {
+      if (error) {
+          console.error('Error querying database:', error);
+          return res.status(500).json({ message: 'Database error' });
+      }
+
+      if (results.length === 0) {
+          console.log('User not found');
+          return res.status(404).json({ message: 'User not found' });
+      }
+
+      const user = results[0];
+      if (user.password !== oldPassword) {
+          console.log('Password update failed: Incorrect old password');
+          return res.status(401).json({ message: 'Incorrect old password' });
+      }
+
+      const updatePasswordSql = 'UPDATE user SET password = ? WHERE id = ?';
+      conn.query(updatePasswordSql, [newPassword, id], (updateError, updateResult) => {
+          if (updateError) {
+              console.error('Error updating password:', updateError);
+              return res.status(500).json({ message: 'Failed to update password' });
+          }
+
+          console.log(`Password updated successfully for user ID: ${id}`);
+          res.status(200).json({ message: 'Password updated successfully' });
+      });
+  });
+});
+
+
+
+app.get("/clients", (req, res) => {
+  conn.query("SELECT * FROM client", (error, rows) => {
+      if (error) {
+          console.error('Error fetching data:', error);
+          return res.status(500).json({ message: 'Error fetching data' });
+      }
+      res.status(200).json(rows);
+  });
 });
 
 
 app.post('/clients', (req, res) => {
-    const { name, amount, AmountPaid, date } = req.body;
+  const { name, amount, AmountPaid, date } = req.body;
+  if (!name || !amount || AmountPaid == null || !date) {
+      return res.status(400).json({ message: 'Missing required fields' });
+  }
 
-    if (!name || !amount || AmountPaid == null || !date) {
-        return res.status(400).json({ message: 'Missing required fields' });
-    }
-
-    const id = name.split(' ').slice(0, 2).join('').toLowerCase();
-    const sql =
-        'INSERT INTO client (name, id, password, amount, AmountPaid, date) VALUES (?, ?, ?, ?, ?, ?)';
-    conn.query(sql, [name, id, id, amount, AmountPaid, date], (error) => {
-        if (error) {
-            console.error('Database error:', error);
-            return res.status(500).json({ message: 'Error adding client' });
-        }
-        res.status(201).json({ message: 'Client added successfully', id, name, amount });
-    });
+  const sql = 'INSERT INTO client (name, amount, AmountPaid, date) VALUES (?, ?, ?, ?)';
+  conn.query(sql, [name, amount, AmountPaid, date], (error) => {
+      if (error) {
+          console.error('Error inserting data:', error);
+          return res.status(500).json({ message: 'Error adding client' });
+      }
+      res.status(201).json({ message: 'Client added successfully' });
+  });
 });
 
 
-app.put('/clients/update', (req, res) => {
-    const { name, amount, newName, dueDate } = req.body;
+app.put('/clients', (req, res) => {
+  const { name, amount, newName, dueDate } = req.body;
+  if (!name || amount == null || !newName || !dueDate) {
+      return res.status(400).json({ message: 'Missing required fields' });
+  }
 
-    if (!name || amount == null || !newName || !dueDate) {
-        return res.status(400).json({ message: 'Missing required fields' });
-    }
+  const parsedDueDate = new Date(dueDate);
+  if (isNaN(parsedDueDate.getTime())) {
+      return res.status(400).json({ message: 'Invalid date format' });
+  }
 
-    const sql = 'UPDATE client SET name = ?, amount = ?, date = ? WHERE name = ?';
-    conn.query(sql, [newName, amount, dueDate, name], (error, results) => {
-        if (error) {
-            console.error('Database error:', error);
-            return res.status(500).json({ message: 'Database error' });
-        }
-        if (results.affectedRows === 0) {
-            return res.status(404).json({ message: 'Client not found' });
-        }
-        res.status(200).json({ message: 'Client updated successfully' });
-    });
+  const sql = 'UPDATE client SET name = ?, amount = ?, date = ? WHERE name = ?';
+  conn.query(sql, [newName, amount, parsedDueDate.toISOString(), name], (error, results) => {
+      if (error) {
+          console.error('Error updating data:', error);
+          return res.status(500).json({ message: 'Error updating client' });
+      }
+      if (results.affectedRows === 0) {
+          return res.status(404).json({ message: 'Client not found' });
+      }
+      res.status(200).json({ message: `Client updated successfully: ${newName}` });
+  });
+});
+
+
+app.delete('/clients/:name', (req, res) => {
+  const clientName = decodeURIComponent(req.params.name);
+  const sql = 'DELETE FROM client WHERE name = ?';
+  conn.query(sql, [clientName], (error, results) => {
+      if (error) {
+          console.error('Error deleting client:', error);
+          return res.status(500).json({ message: 'Error deleting client' });
+      }
+      if (results.affectedRows === 0) {
+          return res.status(404).json({ message: 'Client not found' });
+      }
+      res.status(200).json({ message: 'Client deleted successfully' });
+  });
 });
 
 

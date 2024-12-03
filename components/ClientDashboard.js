@@ -93,7 +93,7 @@ const ClientDashboard = ({ navigation }) => {
               </TouchableOpacity>
             </View>
             <Text style={styles.totalAmount}>Monthly Charges: {amount}</Text>
-          <Text style={styles.totalAmount}>Amount Paid: {AmountPaid}</Text>
+            <Text style={styles.totalAmount}>Amount: {amount}</Text>
             <Text style={styles.dueDate}>Due Date: {date}</Text>
           </View>
           <View style={styles.payment}>

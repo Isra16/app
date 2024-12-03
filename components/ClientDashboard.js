@@ -70,15 +70,7 @@ const ClientDashboard = ({ navigation }) => {
           source={require("../assets/Capture.png")}
           style={styles.topLeftImage}
         />
-        <TouchableOpacity
-          style={styles.topRightImage}
-          onPress={() => navigation.navigate("LogoScreen")}
-        >
-          <Image
-            source={require("../assets/23.png")}
-            style={styles.topRightImage}
-          />
-        </TouchableOpacity>
+      
         <View style={styles.main}>
           <View style={styles.content}>
             <Text style={styles.softwareName}>{name}</Text>
@@ -87,13 +79,13 @@ const ClientDashboard = ({ navigation }) => {
           </View>
           <View style={styles.payment}>
             <TouchableOpacity style={styles.payButton}>
-              <Text style={styles.payButtonText}>Pay Full</Text>
+            <Text style={styles.payButtonText}>Pay{"\n"}Full</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.payButton}
               onPress={() => navigation.navigate("PayPartial")}
             >
-              <Text style={styles.payButtonText}>Pay Partial</Text>
+              <Text style={styles.payButtonText}>Monthly Charges</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.recentPayments}>
@@ -125,19 +117,13 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
   },
   topLeftImage: {
-    width: 150,
+    width: 160,
     height: 70,
     position: "absolute",
-    top: 30,
-    left: -15,
-  },
-  topRightImage: {
-    width: 20,
-    height: 20,
-    position: "absolute",
-    top: 25,
-    left: "73%",
-  },
+    top: 35,
+    left:-15
+    },
+ 
   main: {
     marginTop: "50%",
     marginVertical: 15,
@@ -186,6 +172,7 @@ const styles = StyleSheet.create({
   payButtonText: {
     color: "white",
     fontWeight: "bold",
+    fontSize: 16
   },
   recentPayments: {
     marginTop: 20,

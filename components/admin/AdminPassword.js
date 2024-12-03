@@ -37,7 +37,7 @@ const AdminPassword = () => {
 
     try {
       const response = await fetch(
-        'https://jeywb7rn6x.us-east-1.awsapprunner.com/users', 
+        'https://jeywb7rn6x.us-east-1.awsapprunner.com/update-Password', 
         {
           method: 'PUT',
           headers: {

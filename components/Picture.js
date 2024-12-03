@@ -48,7 +48,7 @@ const Picture = () => {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
-          timeout: 10000, 
+          timeout: 50000, 
         }
       );
 

@@ -5,7 +5,7 @@ const cors = require('cors');
 const session = require('express-session');
 const multer = require('multer');
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
-require('dotenv').config();
+require('dotenv').config(); 
 
 const app = express();
 
@@ -32,7 +32,7 @@ const s3Client = new S3Client({
 });
 const bucketName = process.env.S3_BUCKET_NAME;
 
-// Multer configuration
+
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
@@ -53,274 +53,195 @@ conn.connect((error) => {
     }
 });
 
-// Start the server
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
-    console.log(`Server started on http://localhost:${PORT}`);
-});
-
 
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
     console.log(`Server started on http://localhost:${PORT}`);
 });
-
 
 
 
 app.post('/login', (req, res) => {
     const { id, password } = req.body;
+    console.log('Received user data for login:', req.body);
 
-    if (!id || !password) {
-        return res.status(400).json({ message: 'Missing ID or password' });
-    }
-
-    const sql = 'SELECT * FROM user WHERE id = ?';
+    const sql = 'SELECT * FROM client WHERE id = ?';
     conn.query(sql, [id], (error, results) => {
         if (error) {
-            console.error('Database error:', error);
-            return res.status(500).json({ message: 'Database error' });
+            console.error('Error querying database:', error);
+            return res.status(500).json({ message: 'Error during authentication' });
         }
-        if (results.length === 0 || results[0].password !== password) {
+
+        if (results.length > 0) {
+            const user = results[0];
+            if (password === user.password) {
+                req.session.userId = user.id; 
+                console.log('User authenticated:', user);
+                return res.status(200).json({ message: 'Login successful' });
+            } else {
+                console.log('Authentication failed: Invalid credentials');
+                return res.status(401).json({ message: 'Invalid credentials' });
+            }
+        } else {
+            console.log('Authentication failed: User not found');
             return res.status(401).json({ message: 'Invalid credentials' });
         }
-        req.session.userId = results[0].id;
-        res.status(200).json({ message: 'Login successful' });
     });
 });
-
 
 app.get('/client', (req, res) => {
     if (!req.session.userId) {
-        return res.status(401).json({ message: 'Please log in' });
+        return res.status(401).json({ message: 'Please log in to access client data' });
     }
 
-    const sql = 'SELECT name, amount, date FROM client WHERE id = ?';
-    conn.query(sql, [req.session.userId], (err, result) => {
+    const userId = req.session.userId; 
+    console.log(`Fetching client data for client ID: ${userId}`);
+
+    const query = 'SELECT name, amount, date FROM client WHERE id = ?'; // Fixed query
+    conn.query(query, [userId], (err, result) => {
         if (err) {
             console.error('Database error:', err);
-            return res.status(500).json({ message: 'Database error' });
+            return res.status(500).json({ error: 'Database error' });
         }
+
+        console.log('Query result:', result);
+
         if (result.length === 0) {
+            console.log(`No client found with ID "${userId}"`);
             return res.status(404).json({ message: 'Client not found' });
         }
-        res.status(200).json(result[0]);
+
+        console.log(`Client found: ${result[0].name} for ID ${userId}`);
+        res.json(result[0]);
     });
 });
 
+app.put('/update-Password', (req, res) => {
+    const { id, oldPassword, newPassword } = req.body;
+    console.log(`Received request to update password for user ID: ${id}`);
 
-app.post('/clients', (req, res) => {
-    const { name, amount, AmountPaid, date } = req.body;
-
-    if (!name || !amount || AmountPaid == null || !date) {
-        return res.status(400).json({ message: 'Missing required fields' });
-    }
-
-    const id = name.split(' ').slice(0, 2).join('').toLowerCase();
-    const sql =
-        'INSERT INTO client (name, id, password, amount, AmountPaid, date) VALUES (?, ?, ?, ?, ?, ?)';
-    conn.query(sql, [name, id, id, amount, AmountPaid, date], (error) => {
+    const fetchUserSql = 'SELECT * FROM client WHERE id = ?';
+    conn.query(fetchUserSql, [id], (error, results) => {
         if (error) {
-            console.error('Database error:', error);
-            return res.status(500).json({ message: 'Error adding client' });
-        }
-        res.status(201).json({ message: 'Client added successfully', id, name, amount });
-    });
-});
-
-
-app.put('/clients/update', (req, res) => {
-    const { name, amount, newName, dueDate } = req.body;
-
-    if (!name || amount == null || !newName || !dueDate) {
-        return res.status(400).json({ message: 'Missing required fields' });
-    }
-
-    const sql = 'UPDATE client SET name = ?, amount = ?, date = ? WHERE name = ?';
-    conn.query(sql, [newName, amount, dueDate, name], (error, results) => {
-        if (error) {
-            console.error('Database error:', error);
+            console.error('Error querying database:', error);
             return res.status(500).json({ message: 'Database error' });
         }
-        if (results.affectedRows === 0) {
-            return res.status(404).json({ message: 'Client not found' });
+
+        if (results.length === 0) {
+            console.log('User not found');
+            return res.status(404).json({ message: 'User not found' });
         }
-        res.status(200).json({ message: 'Client updated successfully' });
-    });
-});
 
+        const user = results[0];
+        if (user.password !== oldPassword) {
+            console.log('Password update failed: Incorrect old password');
+            return res.status(401).json({ message: 'Incorrect old password' });
+        }
 
-app.post('/uploads', upload.single('file'), async (req, res) => {
-    const { file } = req;
-    if (!file) {
-        return res.status(400).json({ message: 'No file uploaded' });
-    }
-
-    const fileKey = `${Date.now()}-${file.originalname}`;
-
-    try {
-        const uploadParams = {
-            Bucket: bucketName,
-            Key: fileKey,
-            Body: file.buffer,
-            ContentType: file.mimetype,
-        };
-
-        await s3Client.send(new PutObjectCommand(uploadParams));
-        const fileUrl = `https://${bucketName}.s3.amazonaws.com/${fileKey}`;
-
-        const sql = 'INSERT INTO uploads (image_url) VALUES (?)';
-        conn.query(sql, [fileUrl], (error) => {
-            if (error) {
-                console.error('MySQL Insert Error:', error);
-                return res.status(500).json({ message: 'Error saving file URL' });
+        const updatePasswordSql = 'UPDATE client SET password = ? WHERE id = ?';
+        conn.query(updatePasswordSql, [newPassword, id], (updateError, updateResult) => {
+            if (updateError) {
+                console.error('Error updating password:', updateError);
+                return res.status(500).json({ message: 'Failed to update password' });
             }
-            res.status(200).json({ url: fileUrl });
+
+            console.log(`Password updated successfully for user ID: ${id}`);
+            res.status(200).json({ message: 'Password updated successfully' });
         });
-    } catch (err) {
-        console.error('S3 Upload Error:', err);
-        res.status(500).json({ message: 'Error uploading file to S3' });
-    }
-});
-
-=======
-const express = require('express');
-const mysql = require('mysql');
-const bodyParser = require('body-parser');
-const cors = require('cors');
-const session = require('express-session');
-const multer = require('multer');
-const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
-require('dotenv').config(); // Load .env file
-
-const app = express();
-
-// Enable CORS
-app.use(cors());
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-
-// Session setup
-app.use(session({
-    secret: process.env.SESSION_SECRET, // Use secret from .env
-    resave: false,
-    saveUninitialized: true,
-    cookie: { secure: false }
-}));
-
-// AWS S3 configuration
-const s3Client = new S3Client({
-    region: process.env.AWS_REGION,
-    credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    },
-});
-const bucketName = process.env.S3_BUCKET_NAME;
-
-// Multer setup to handle file uploads in memory
-const storage = multer.memoryStorage();
-const upload = multer({ storage });
-
-// MySQL database connection
-const conn = mysql.createConnection({
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME
-});
-
-conn.connect((error) => {
-    if (error) {
-        console.error('Error connecting to the database:', error);
-    } else {
-        console.log('Connected to the database');
-    }
-});
-
-// Start the server
-const server = app.listen(8080, () => {
-    console.log(`Server started on http://localhost:8080`);
-});
-
-// Routes
-
-// Login route
-app.post('/login', (req, res) => {
-    const { id, password } = req.body;
-
-    const sql = 'SELECT * FROM user WHERE id = ?';
-    conn.query(sql, [id], (error, results) => {
-        if (error) return res.status(500).json({ message: 'Database error' });
-        if (results.length === 0 || results[0].password !== password) {
-            return res.status(401).json({ message: 'Invalid credentials' });
-        }
-        req.session.userId = results[0].id;
-        res.status(200).json({ message: 'Login successful' });
     });
 });
 
-// Get client data
-app.get('/client', (req, res) => {
-    if (!req.session.userId) return res.status(401).json({ message: 'Please log in' });
 
-    const sql = 'SELECT name, amount, date FROM client WHERE name = ?';
-    conn.query(sql, [req.session.userId], (err, result) => {
-        if (err) return res.status(500).json({ message: 'Database error' });
-        if (result.length === 0) return res.status(404).json({ message: 'Client not found' });
-        res.status(200).json(result[0]);
-    });
+
+app.get("/clients", (req, res) => {
+  conn.query("SELECT * FROM client", (error, rows) => {
+      if (error) {
+          console.error('Error fetching data:', error);
+          return res.status(500).json({ message: 'Error fetching data' });
+      }
+      res.status(200).json(rows);
+  });
 });
 
-// Add new client
+
 app.post('/clients', (req, res) => {
-    const { name, amount, AmountPaid, date } = req.body;
-    if (!name || !amount || AmountPaid == null || !date) {
-        return res.status(400).json({ message: 'Missing required fields' });
-    }
+  const { name, amount, AmountPaid, date } = req.body;
+  if (!name || !amount || AmountPaid == null || !date) {
+      return res.status(400).json({ message: 'Missing required fields' });
+  }
 
-    const id = name.split(' ').slice(0, 2).join('').toLowerCase();
-    const sql = 'INSERT INTO client (name, id, password, amount, AmountPaid, date) VALUES (?, ?, ?, ?, ?, ?)';
-    conn.query(sql, [name, id, id, amount, AmountPaid, date], (error) => {
-        if (error) return res.status(500).json({ message: 'Error adding client' });
-        res.status(201).json({ message: 'Client added successfully', id, name, amount });
-    });
+  const sql = 'INSERT INTO client (name, amount, AmountPaid, date) VALUES (?, ?, ?, ?)';
+  conn.query(sql, [name, amount, AmountPaid, date], (error) => {
+      if (error) {
+          console.error('Error inserting data:', error);
+          return res.status(500).json({ message: 'Error adding client' });
+      }
+      res.status(201).json({ message: 'Client added successfully' });
+  });
 });
 
-// Update client
-app.put('/clients/update', (req, res) => {
-    const { name, amount, newName, dueDate } = req.body;
-    if (!name || amount == null || !newName || !dueDate) {
-        return res.status(400).json({ message: 'Missing required fields' });
-    }
 
-    const sql = 'UPDATE client SET name = ?, amount = ?, date = ? WHERE name = ?';
-    conn.query(sql, [newName, amount, dueDate, name], (error, results) => {
-        if (error) return res.status(500).json({ message: 'Database error' });
-        if (results.affectedRows === 0) return res.status(404).json({ message: 'Client not found' });
-        res.status(200).json({ message: 'Client updated successfully' });
-    });
+app.put('/clients', (req, res) => {
+  const { name, amount, newName, dueDate } = req.body;
+  if (!name || amount == null || !newName || !dueDate) {
+      return res.status(400).json({ message: 'Missing required fields' });
+  }
+
+  const parsedDueDate = new Date(dueDate);
+  if (isNaN(parsedDueDate.getTime())) {
+      return res.status(400).json({ message: 'Invalid date format' });
+  }
+
+  const sql = 'UPDATE client SET name = ?, amount = ?, date = ? WHERE name = ?';
+  conn.query(sql, [newName, amount, parsedDueDate.toISOString(), name], (error, results) => {
+      if (error) {
+          console.error('Error updating data:', error);
+          return res.status(500).json({ message: 'Error updating client' });
+      }
+      if (results.affectedRows === 0) {
+          return res.status(404).json({ message: 'Client not found' });
+      }
+      res.status(200).json({ message: `Client updated successfully: ${newName}` });
+  });
 });
 
-// File upload route
+
+app.delete('/clients/:name', (req, res) => {
+  const clientName = decodeURIComponent(req.params.name);
+  const sql = 'DELETE FROM client WHERE name = ?';
+  conn.query(sql, [clientName], (error, results) => {
+      if (error) {
+          console.error('Error deleting client:', error);
+          return res.status(500).json({ message: 'Error deleting client' });
+      }
+      if (results.affectedRows === 0) {
+          return res.status(404).json({ message: 'Client not found' });
+      }
+      res.status(200).json({ message: 'Client deleted successfully' });
+  });
+});
+
+
 app.post('/uploads', upload.single('file'), async (req, res) => {
     const { file } = req;
     if (!file) {
-        console.log('No file received');
         return res.status(400).json({ message: 'No file uploaded' });
     }
-    console.log('File received:', file);
 
     const fileKey = `${Date.now()}-${file.originalname}`;
 
     try {
+        console.log("Uploading file to S3:", fileKey, file.mimetype);  
+
         const uploadParams = {
-            Bucket: bucketName,  // Ensure you're using the correct bucket name
+            Bucket: bucketName, 
             Key: fileKey,
             Body: file.buffer,
             ContentType: file.mimetype,
         };
+
+        
+        console.log("S3 Upload Params:", uploadParams);
 
         await s3Client.send(new PutObjectCommand(uploadParams));
         const fileUrl = `https://${bucketName}.s3.amazonaws.com/${fileKey}`;

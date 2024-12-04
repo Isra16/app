@@ -95,7 +95,7 @@ app.get('/client', (req, res) => {
         return res.status(401).json({ message: 'Please log in to access client data' });
     }
 
-    const sql = 'SELECT name, amount, date FROM client WHERE id = ?';
+    const sql = 'SELECT name, amount,AmountPaid, date FROM client WHERE id = ?';
     conn.query(sql, [req.session.userId], (err, result) => {
         if (err) {
             console.error('Database error:', err);

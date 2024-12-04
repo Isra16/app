@@ -215,7 +215,7 @@ app.post("/api/payments", (req, res) => {
       VALUES (?, ?, ?)
     `;
     
-    db.query(query, [name, totalAmount, paymentDate], (err, result) => {
+    conn.query(query, [name, totalAmount, paymentDate], (err, result) => {
       if (err) {
         console.error(err);
         return res.status(500).json({ message: "Payment failed" });

@@ -1,21 +1,24 @@
 import React, { useEffect, useState } from "react";
-import { 
-  View, 
-  Text, 
-  Image, 
-  SafeAreaView, 
-  StyleSheet, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  Image,
+  SafeAreaView,
+  StyleSheet,
+  TouchableOpacity,
   ActivityIndicator,
-  Alert 
+  Alert,
 } from "react-native";
 import Footer from "./Footer";
 import Icon from "react-native-vector-icons/MaterialIcons"; // Importing MaterialIcons
 
 const ClientDashboard = ({ navigation }) => {
   const [data, setData] = useState(null);
+  const [arrears, setArrears] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const currentDate = new Date();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -24,6 +27,7 @@ const ClientDashboard = ({ navigation }) => {
         const response = await fetch("https://jeywb7rn6x.us-east-1.awsapprunner.com/client");
         if (!response.ok) throw new Error("Failed to fetch data");
         const result = await response.json();
+
         if (result.date) {
           const dateObject = new Date(result.date);
           result.date = isNaN(dateObject)
@@ -34,6 +38,7 @@ const ClientDashboard = ({ navigation }) => {
                 day: "numeric",
               });
         }
+
         setData(result);
       } catch (err) {
         setError(err.message);
@@ -45,6 +50,19 @@ const ClientDashboard = ({ navigation }) => {
 
     fetchData();
   }, []);
+
+  useEffect(() => {
+    if (data?.date && data?.amount && data?.AmountPaid) {
+      const dueDate = new Date(data.date);
+      const balance = data.amount - data.AmountPaid;
+
+      if (currentDate > dueDate && balance > 0) {
+        setArrears(balance);
+      } else {
+        setArrears(0);
+      }
+    }
+  }, [currentDate, data]);
 
   if (loading) {
     return (
@@ -62,7 +80,38 @@ const ClientDashboard = ({ navigation }) => {
     );
   }
 
-  const { name, amount, date } = data;
+  const { name, amount, AmountPaid, date } = data || {};
+  const balance = amount - AmountPaid;
+  const totalAmount = balance + arrears;
+  const handlePayment = async () => {
+    try {
+      const paymentData = {
+        name: data.name, // Use the name from the screen data
+        totalAmount: totalAmount, // The total amount to be paid
+      };
+  
+      const response = await fetch("https://jeywb7rn6x.us-east-1.awsapprunner.com/api/payments", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(paymentData),
+      });
+  
+      const result = await response.json();
+  
+      if (response.ok) {
+        Alert.alert("Payment Successful", result.message);
+      } else {
+        throw new Error(result.message || "Payment failed");
+      }
+    } catch (error) {
+      Alert.alert("Error", error.message);
+    }
+  };
+  
+
+
 
   const handleUpload = () => {
     Alert.alert("Upload Picture", "This feature is under development!");
@@ -75,7 +124,15 @@ const ClientDashboard = ({ navigation }) => {
           source={require("../assets/Capture.png")}
           style={styles.topLeftImage}
         />
-      
+        <TouchableOpacity
+          style={styles.topRightImage}
+          onPress={() => navigation.navigate("LogoScreen")}
+        >
+          <Image
+            source={require("../assets/23.png")}
+            style={styles.topRightImage}
+          />
+        </TouchableOpacity>
         <View style={styles.main}>
           <View style={styles.content}>
             <View style={styles.nameRow}>
@@ -85,40 +142,63 @@ const ClientDashboard = ({ navigation }) => {
               </TouchableOpacity>
             </View>
             <Text style={styles.totalAmount}>Monthly Charges: {amount}</Text>
-            <Text style={styles.totalAmount}>Amount: {amount}</Text>
+            <Text style={styles.totalAmount}>Amount Paid: {AmountPaid}</Text>
+            <Text style={styles.totalAmount}>Balance: {balance}</Text>
+            <Text style={styles.totalAmount}>Arrears: {arrears}</Text>
+            <Text style={styles.totalAmount}>Total Amount: {totalAmount}</Text>
             <Text style={styles.dueDate}>Due Date: {date}</Text>
           </View>
           <View style={styles.payment}>
-            <TouchableOpacity style={styles.payButton}>
-              <Text style={styles.payButtonText}>Pay Full</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.payButton}
-              onPress={() => navigation.navigate("PayPartial")}
-            >
-              <Text style={styles.payButtonText}>Pay Partial</Text>
+    
+<TouchableOpacity
+  style={styles.payButton}
+  onPress={() => {
+    Alert.alert(
+      "Confirm Payment",
+      `Are you sure you want to pay the full amount of ${totalAmount}?`,
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Yes",
+          onPress: handlePayment,
+        },
+      ],
+      { cancelable: false }
+    );
+  }}
+>
+  <Text style={styles.payButtonText}>Pay Full</Text>
+</TouchableOpacity>
+
+
+            <TouchableOpacity style={styles.payButton}> 
+              <Text style={styles.payButtonText}>Pay Monthly Charges</Text>
             </TouchableOpacity>
           </View>
-          <View style={styles.recentPayments}>
+          {/* <View style={styles.recentPayments}>
             <Text style={styles.recentPaymentsTitle}>Recent Payments</Text>
             <View style={styles.paymentItem}>
-              <Text style={styles.paymentAmount}>2000$</Text>
+              <Text style={styles.paymentAmount}>$2000</Text>
               <Text style={styles.paymentDate}>28 December, 2023</Text>
             </View>
             <View style={styles.paymentItem}>
-              <Text style={styles.paymentAmount}>2000$</Text>
+              <Text style={styles.paymentAmount}>$2000</Text>
               <Text style={styles.paymentDate}>28 November, 2023</Text>
             </View>
             <TouchableOpacity style={styles.viewAllButton}>
               <Text style={styles.viewAllText}>View All</Text>
             </TouchableOpacity>
-          </View>
+          </View> */}
         </View>
       </View>
       <Footer navigation={navigation} />
     </SafeAreaView>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {
@@ -128,15 +208,21 @@ const styles = StyleSheet.create({
     justifyContent: "flex-start",
   },
   topLeftImage: {
-    width: 160,
+    width: 150,
     height: 70,
     position: "absolute",
-    top: 35,
-    left:-15
-    },
- 
+    top: 30,
+    left: -15,
+  },
+  topRightImage: {
+    width: 20,
+    height: 20,
+    position: "absolute",
+    top: 25,
+    left: "73%",
+  },
   main: {
-    marginTop: "50%",
+    marginTop: "40%",
     marginVertical: 15,
     backgroundColor: "#fff",
     width: "80%",
@@ -159,10 +245,10 @@ const styles = StyleSheet.create({
   },
   iconContainer: {
     marginTop: 10,
-    marginLeft: 140,
+    marginLeft: 170,
   },
   softwareName: {
-    marginTop:10,
+    marginTop: 10,
     fontSize: 25,
     fontWeight: "bold",
   },
@@ -191,7 +277,6 @@ const styles = StyleSheet.create({
   payButtonText: {
     color: "white",
     fontWeight: "bold",
-    fontSize: 16
   },
   recentPayments: {
     marginTop: 20,

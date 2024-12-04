@@ -95,7 +95,7 @@ app.get('/client', (req, res) => {
         return res.status(401).json({ message: 'Please log in to access client data' });
     }
 
-    const sql = 'SELECT name, amount,AmountPaid, date FROM client WHERE id = ?';
+    const sql = 'SELECT name, amount, AmountPaid, date FROM client WHERE id = ?';
     conn.query(sql, [req.session.userId], (err, result) => {
         if (err) {
             console.error('Database error:', err);
@@ -204,3 +204,22 @@ app.post('/uploads', upload.single('file'), async (req, res) => {
         res.status(500).json({ message: 'Error uploading file to S3' });
     }
 });
+
+
+app.post("/api/payments", (req, res) => {
+    const { name, totalAmount } = req.body;
+    const paymentDate = new Date().toISOString(); // Store the current date and time
+  
+    const query = `
+      INSERT INTO payments (name, total_amount, payment_date)
+      VALUES (?, ?, ?)
+    `;
+    
+    db.query(query, [name, totalAmount, paymentDate], (err, result) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ message: "Payment failed" });
+      }
+      return res.status(200).json({ message: "Payment successful" });
+    });
+  });

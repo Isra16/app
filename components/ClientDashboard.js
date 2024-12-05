@@ -10,13 +10,14 @@ import {
   Alert,
 } from "react-native";
 import Footer from "./Footer";
-import Icon from "react-native-vector-icons/MaterialIcons"; // Importing MaterialIcons
+import Icon from "react-native-vector-icons/MaterialIcons";
 
 const ClientDashboard = ({ navigation }) => {
   const [data, setData] = useState(null);
   const [arrears, setArrears] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [recentPayments, setRecentPayments] = useState([]); // State for recent payments
 
   const currentDate = new Date();
 
@@ -64,6 +65,26 @@ const ClientDashboard = ({ navigation }) => {
     }
   }, [currentDate, data]);
 
+  // Fetch recent payments for the client
+  useEffect(() => {
+    const fetchRecentPayments = async () => {
+      try {
+        const response = await fetch(
+          `https://jeywb7rn6x.us-east-1.awsapprunner.com/api/payments?clientName=${data?.name}`
+        );
+        if (!response.ok) throw new Error("Failed to fetch recent payments");
+        const payments = await response.json();
+        setRecentPayments(payments);
+      } catch (err) {
+        console.error(err.message);
+      }
+    };
+
+    if (data?.name) {
+      fetchRecentPayments();
+    }
+  }, [data]);
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -83,13 +104,14 @@ const ClientDashboard = ({ navigation }) => {
   const { name, amount, AmountPaid, date } = data || {};
   const balance = amount - AmountPaid;
   const totalAmount = balance + arrears;
+
   const handlePayment = async () => {
     try {
       const paymentData = {
-        name: data.name, // Use the name from the screen data
-        totalAmount: totalAmount, // The total amount to be paid
+        name: data.name,
+        totalAmount: totalAmount,
       };
-  
+
       const response = await fetch("https://jeywb7rn6x.us-east-1.awsapprunner.com/api/payments", {
         method: "POST",
         headers: {
@@ -97,9 +119,8 @@ const ClientDashboard = ({ navigation }) => {
         },
         body: JSON.stringify(paymentData),
       });
-  
+
       const result = await response.json();
-  
       if (response.ok) {
         Alert.alert("Payment Successful", result.message);
       } else {
@@ -109,9 +130,6 @@ const ClientDashboard = ({ navigation }) => {
       Alert.alert("Error", error.message);
     }
   };
-  
-
-
 
   const handleUpload = () => {
     Alert.alert("Upload Picture", "This feature is under development!");
@@ -149,49 +167,36 @@ const ClientDashboard = ({ navigation }) => {
             <Text style={styles.dueDate}>Due Date: {date}</Text>
           </View>
           <View style={styles.payment}>
-    
-<TouchableOpacity
-  style={styles.payButton}
-  onPress={() => {
-    Alert.alert(
-      "Confirm Payment",
-      `Are you sure you want to pay the full amount of ${totalAmount}?`,
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-        {
-          text: "Yes",
-          onPress: handlePayment,
-        },
-      ],
-      { cancelable: false }
-    );
-  }}
->
-  <Text style={styles.payButtonText}>Pay Full</Text>
-</TouchableOpacity>
-
-
-            <TouchableOpacity style={styles.payButton}> 
-              <Text style={styles.payButtonText}>Pay Monthly Charges</Text>
+            <TouchableOpacity
+              style={styles.payButton}
+              onPress={() => {
+                Alert.alert(
+                  "Confirm Payment",
+                  `Are you sure you want to pay the full amount of $${totalAmount}?`,
+                  [
+                    { text: "Cancel", style: "cancel" },
+                    { text: "Yes", onPress: handlePayment },
+                  ],
+                  { cancelable: false }
+                );
+              }}
+            >
+              <Text style={styles.payButtonText}>Pay Full</Text>
             </TouchableOpacity>
           </View>
-          {/* <View style={styles.recentPayments}>
+          <View style={styles.recentPayments}>
             <Text style={styles.recentPaymentsTitle}>Recent Payments</Text>
-            <View style={styles.paymentItem}>
-              <Text style={styles.paymentAmount}>$2000</Text>
-              <Text style={styles.paymentDate}>28 December, 2023</Text>
-            </View>
-            <View style={styles.paymentItem}>
-              <Text style={styles.paymentAmount}>$2000</Text>
-              <Text style={styles.paymentDate}>28 November, 2023</Text>
-            </View>
-            <TouchableOpacity style={styles.viewAllButton}>
-              <Text style={styles.viewAllText}>View All</Text>
-            </TouchableOpacity>
-          </View> */}
+            {recentPayments.length > 0 ? (
+              recentPayments.map((payment, index) => (
+                <View key={index} style={styles.paymentItem}>
+                  <Text style={styles.paymentAmount}>${payment.amount}</Text>
+                  <Text style={styles.paymentDate}>{new Date(payment.payment_date).toLocaleDateString()}</Text>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.noPaymentsText}>No recent payments available</Text>
+            )}
+          </View>
         </View>
       </View>
       <Footer navigation={navigation} />

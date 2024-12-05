@@ -223,3 +223,21 @@ app.post("/api/payments", (req, res) => {
       return res.status(200).json({ message: "Payment successful" });
     });
   });
+
+
+  app.get("/api/payments", (req, res) => {
+    const { clientName } = req.query;
+  
+    if (!clientName) {
+      return res.status(400).json({ error: "Client name is required" });
+    }
+  
+    const query = "SELECT * FROM payments WHERE client_name = ? ORDER BY payment_date DESC LIMIT 5";
+    db.query(query, [clientName], (err, results) => {
+      if (err) {
+        console.error("Error fetching payments:", err.message);
+        return res.status(500).json({ error: "Internal server error" });
+      }
+      res.json(results);
+    });
+  });

@@ -205,21 +205,3 @@ app.post('/uploads', upload.single('file'), async (req, res) => {
     }
 });
 
-
-app.post("/api/payments", (req, res) => {
-    const { name, totalAmount } = req.body;
-    const paymentDate = new Date().toISOString(); // Store the current date and time
-  
-    const query = `
-      INSERT INTO payments (name, total_amount, payment_date)
-      VALUES (?, ?, ?)
-    `;
-    
-    conn.query(query, [name, totalAmount, paymentDate], (err, result) => {
-      if (err) {
-        console.error(err);
-        return res.status(500).json({ message: "Payment failed" });
-      }
-      return res.status(200).json({ message: "Payment successful" });
-    });
-  });

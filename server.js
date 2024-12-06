@@ -167,7 +167,7 @@ app.delete('/clients/:name', (req, res) => {
 });
 
 
-app.post('/uploads', upload.single('file'), async (req, res) => {
+app.post('/api/payments', upload.single('file'), async (req, res) => {
     const { file } = req;
     if (!file) {
         return res.status(400).json({ message: 'No file uploaded' });
@@ -240,7 +240,3 @@ app.post("/api/payments", (req, res) => {
       res.json(results);
     });
   });
-
-
-
-

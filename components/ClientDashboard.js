@@ -10,6 +10,8 @@ import {
   Alert,
 } from "react-native";
 import Footer from "./Footer";
+import { launchImageLibrary } from 'react-native-image-picker';
+import axios from 'axios';
 import Icon from "react-native-vector-icons/MaterialIcons";
 
 const ClientDashboard = ({ navigation }) => {
@@ -122,7 +124,13 @@ const ClientDashboard = ({ navigation }) => {
 
       const result = await response.json();
       if (response.ok) {
-        Alert.alert("Payment Successful", result.message);
+        Alert.alert("Payment Successful", result.message, [
+          {
+            text: "Upload Screenshot",
+            onPress: () => handleUpload(), // Trigger the upload function
+          },
+        ]);
+
       } else {
         throw new Error(result.message || "Payment failed");
       }
@@ -131,8 +139,42 @@ const ClientDashboard = ({ navigation }) => {
     }
   };
 
-  const handleUpload = () => {
-    Alert.alert("Upload Picture", "This feature is under development!");
+  const handleUpload = async () => {
+    if (!imageUri) {
+      setSuccessMessage('Please select an image first.');
+      return;
+    }
+
+    setIsUploading(true);
+    setSuccessMessage('');
+
+    const formData = new FormData();
+    formData.append('file', {
+      uri: imageUri,
+    });
+
+    try {
+      const res = await axios.post(
+        'https://jeywb7rn6x.us-east-1.awsapprunner.com/api/payments',
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          timeout: 50000, 
+        }
+      );
+
+      if (res.data && res.data.url) {
+        setUploadUrl(res.data.url);
+        setSuccessMessage('Image uploaded successfully!');
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error.message);
+      setSuccessMessage('Failed to upload image. Please try again.');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
@@ -189,7 +231,7 @@ const ClientDashboard = ({ navigation }) => {
             {recentPayments.length > 0 ? (
               recentPayments.map((payment, index) => (
                 <View key={index} style={styles.paymentItem}>
-                  <Text style={styles.paymentAmount}>${payment.amount}</Text>
+                  <Text style={styles.paymentAmount}>${payment.total_amount}</Text>
                   <Text style={styles.paymentDate}>{new Date(payment.payment_date).toLocaleDateString()}</Text>
                 </View>
               ))
@@ -203,8 +245,6 @@ const ClientDashboard = ({ navigation }) => {
     </SafeAreaView>
   );
 };
-
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,

@@ -12,12 +12,12 @@ import {
 import Footer from "./Footer";
 import { launchImageLibrary } from 'react-native-image-picker';
 import axios from 'axios';
-//import Icon from "react-native-vector-icons/MaterialIcons";
+import Icon from "react-native-vector-icons/MaterialIcons";
 
 const ClientDashboard = ({ navigation }) => {
   const [data, setData] = useState(null);
   const [arrears, setArrears] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useStzate(true);
   const [error, setError] = useState(null);
   const [recentPayments, setRecentPayments] = useState([]); // State for recent payments
 
@@ -195,7 +195,12 @@ const ClientDashboard = ({ navigation }) => {
         </TouchableOpacity>
         <View style={styles.main}>
           <View style={styles.content}>
+            <View style={styles.nameRow}>
               <Text style={styles.softwareName}>{name}</Text>
+              <TouchableOpacity onPress={handleUpload} style={styles.iconContainer}>
+                <Icon name="photo-camera" size={28} color="black" />
+              </TouchableOpacity>
+            </View>
             <Text style={styles.totalAmount}>Monthly Charges: {amount}</Text>
             <Text style={styles.totalAmount}>Amount Paid: {AmountPaid}</Text>
             <Text style={styles.totalAmount}>Balance: {balance}</Text>

@@ -167,62 +167,57 @@ app.delete('/clients/:name', (req, res) => {
 });
 
 
-app.post('/api/payments', upload.single('file'), async (req, res) => {
+app.post("/api/payment-with-file", upload.single("file"), async (req, res) => {
     const { file } = req;
-    if (!file) {
-        return res.status(400).json({ message: 'No file uploaded' });
-    }
-
-    const fileKey = `${Date.now()}-${file.originalname}`;
-
-    try {
-        console.log("Uploading file to S3:", fileKey, file.mimetype);  
-
-        const uploadParams = {
-            Bucket: bucketName, 
-            Key: fileKey,
-            Body: file.buffer,
-            ContentType: file.mimetype,
-        };
-
-        
-        console.log("S3 Upload Params:", uploadParams);
-
-        await s3Client.send(new PutObjectCommand(uploadParams));
-        const fileUrl = `https://${bucketName}.s3.amazonaws.com/${fileKey}`;
-
-        const sql = 'INSERT INTO uploads (image_url) VALUES (?)';
-        conn.query(sql, [fileUrl], (error) => {
-            if (error) {
-                console.error('MySQL Insert Error:', error);
-                return res.status(500).json({ message: 'Error saving file URL' });
-            }
-            res.status(200).json({ url: fileUrl });
-        });
-    } catch (err) {
-        console.error('S3 Upload Error:', err);
-        res.status(500).json({ message: 'Error uploading file to S3' });
-    }
-});
-
-app.post("/api/payments", (req, res) => {
     const { name, totalAmount } = req.body;
-    const paymentDate = new Date().toISOString(); // Store the current date and time
   
-    const query = `
-      INSERT INTO payments (name, total_amount, payment_date)
-      VALUES (?, ?, ?)
-    `;
-    
-    conn.query(query, [name, totalAmount, paymentDate], (err, result) => {
-      if (err) {
-        console.error(err);
-        return res.status(500).json({ message: "Payment failed" });
+    if (!name || !totalAmount) {
+      return res.status(400).json({ message: "Name and total amount are required" });
+    }
+  
+    const paymentDate = new Date().toISOString(); // Current date and time
+    let fileUrl = null;
+  
+    try {
+      // Handle file upload if a file is provided
+      if (file) {
+        const fileKey = `${Date.now()}-${file.originalname}`;
+        const uploadParams = {
+          Bucket: bucketName,
+          Key: fileKey,
+          Body: file.buffer,
+          ContentType: file.mimetype,
+        };
+  
+        console.log("Uploading file to S3:", fileKey, file.mimetype);
+        await s3Client.send(new PutObjectCommand(uploadParams));
+        fileUrl = `https://${bucketName}.s3.amazonaws.com/${fileKey}`;
       }
-      return res.status(200).json({ message: "Payment successful" });
-    });
+  
+      // Insert payment data into the database
+      const paymentQuery = `
+        INSERT INTO payments (name, total_amount, payment_date, file_url)
+        VALUES (?, ?, ?, ?)
+      `;
+      const queryParams = [name, totalAmount, paymentDate, fileUrl];
+  
+      conn.query(paymentQuery, queryParams, (err, result) => {
+        if (err) {
+          console.error("MySQL Insert Error:", err);
+          return res.status(500).json({ message: "Payment and file upload failed" });
+        }
+  
+        res.status(200).json({
+          message: "Payment successful",
+          paymentId: result.insertId,
+          fileUrl,
+        });
+      });
+    } catch (err) {
+      console.error("Error:", err);
+      res.status(500).json({ message: "Error processing payment or uploading file", error: err.message });
+    }
   });
-
 
   app.get("/api/payments", (req, res) => {
     const { clientName } = req.query;

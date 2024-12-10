@@ -17,7 +17,7 @@ import Icon from "react-native-vector-icons/MaterialIcons";
 const ClientDashboard = ({ navigation }) => {
   const [data, setData] = useState(null);
   const [arrears, setArrears] = useState(0);
-  const [loading, setLoading] = useStzate(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [recentPayments, setRecentPayments] = useState([]); // State for recent payments
 

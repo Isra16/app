@@ -60,6 +60,34 @@ app.listen(PORT, () => {
 });
 
 
+app.post('/admin/login', (req, res) => {
+    const { id, password } = req.body;
+    console.log('Received user data for login:', req.body);
+
+    const sql = 'SELECT * FROM user WHERE id = ?';
+    conn.query(sql, [id], (error, results) => {
+        if (error) {
+            console.error('Error querying database:', error);
+            return res.status(500).json({ message: 'Error during authentication' });
+        }
+
+        if (results.length > 0) {
+            const user = results[0];
+            if (password === user.password) {
+                req.session.userId = user.id; 
+                console.log('User authenticated:', user);
+                return res.status(200).json({ message: 'Login successful' });
+            } else {
+                console.log('Authentication failed: Invalid credentials');
+                return res.status(401).json({ message: 'Invalid credentials' });
+            }
+        } else {
+            console.log('Authentication failed: User not found');
+            return res.status(401).json({ message: 'Invalid credentials' });
+        }
+    });
+});
+
 
 app.post('/login', (req, res) => {
     const { id, password } = req.body;

@@ -37,13 +37,14 @@ const LogoScreen = () => {
     setErrors({});
     setLoginMessage('');
     const newErrors = validateInputs(userid, password);
-
+  
     if (newErrors) {
       setErrors(newErrors);
       return;
     }
-
+  
     try {
+      // Call the first login API
       const response = await fetch('https://jeywb7rn6x.us-east-1.awsapprunner.com/login', {
         method: 'POST',
         headers: {
@@ -51,26 +52,41 @@ const LogoScreen = () => {
         },
         body: JSON.stringify({ id: userid, password }),
       });
-
+  
       const result = await response.json();
-
+  
       if (response.ok) {
         setLoginMessage('Login Successful');
-
-        const isAdmin = userid.startsWith('Admin'); // Example condition for admin
-        if (isAdmin) {
-          navigation.navigate('Dashboard'); // Admin Panel
+        console.log('First API Login Result:', result);
+  
+      
+        const adminResponse = await fetch('https://jeywb7rn6x.us-east-1.awsapprunner.com/admin/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ id: userid, password }),
+        });
+  
+        const adminResult = await adminResponse.json();
+  
+        if (adminResponse.ok) {
+          console.log('Admin Login Successful:', adminResult);
+          setLoginMessage('Admin Login Successful');
         } else {
-          navigation.navigate('UserPanel'); // User Panel
+          console.error('Admin Login Failed:', adminResult.message);
+          throw new Error(adminResult.message || 'Admin login failed');
         }
       } else {
+        console.error('Login Failed:', result.message);
         throw new Error(result.message || 'Login failed');
       }
     } catch (error) {
+      console.error('Error:', error.message);
       setLoginMessage(error.message);
     }
   };
-
+  
   useEffect(() => {
     Animated.timing(slideAnim, {
       toValue: 0,

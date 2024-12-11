@@ -5,7 +5,7 @@ const cors = require('cors');
 const session = require('express-session');
 const multer = require('multer');
 const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
-require('dotenv').config(); 
+require('dotenv').config();
 
 const app = express();
 
@@ -15,7 +15,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(
     session({
-        secret: process.env.SESSION_SECRET || 'defaultsecret', 
+        secret: process.env.SESSION_SECRET || 'defaultsecret',
         resave: false,
         saveUninitialized: true,
         cookie: { secure: false },
@@ -59,7 +59,6 @@ app.listen(PORT, () => {
     console.log(`Server started on http://localhost:${PORT}`);
 });
 
-
 app.post('/admin/login', (req, res) => {
     const { id, password } = req.body;
     console.log('Received user data for login:', req.body);
@@ -74,7 +73,7 @@ app.post('/admin/login', (req, res) => {
         if (results.length > 0) {
             const user = results[0];
             if (password === user.password) {
-                req.session.userId = user.id; 
+                req.session.userId = user.id;
                 console.log('User authenticated:', user);
                 return res.status(200).json({ message: 'Login successful' });
             } else {
@@ -87,6 +86,7 @@ app.post('/admin/login', (req, res) => {
         }
     });
 });
+
 
 
 app.post('/login', (req, res) => {
@@ -103,7 +103,7 @@ app.post('/login', (req, res) => {
         if (results.length > 0) {
             const user = results[0];
             if (password === user.password) {
-                req.session.userId = user.id; 
+                req.session.userId = user.id;
                 console.log('User authenticated:', user);
                 return res.status(200).json({ message: 'Login successful' });
             } else {
@@ -207,13 +207,13 @@ app.post('/api/payments', upload.single('file'), async (req, res) => {
         console.log("Uploading file to S3:", fileKey, file.mimetype);  
 
         const uploadParams = {
-            Bucket: bucketName, 
+            Bucket: bucketName,
             Key: fileKey,
             Body: file.buffer,
             ContentType: file.mimetype,
         };
 
-        
+       
         console.log("S3 Upload Params:", uploadParams);
 
         await s3Client.send(new PutObjectCommand(uploadParams));
@@ -236,12 +236,12 @@ app.post('/api/payments', upload.single('file'), async (req, res) => {
 app.post("/api/payments", (req, res) => {
     const { name, totalAmount } = req.body;
     const paymentDate = new Date().toISOString(); // Store the current date and time
-  
+ 
     const query = `
       INSERT INTO payments (name, total_amount, payment_date)
       VALUES (?, ?, ?)
     `;
-    
+   
     conn.query(query, [name, totalAmount, paymentDate], (err, result) => {
       if (err) {
         console.error(err);
@@ -254,11 +254,11 @@ app.post("/api/payments", (req, res) => {
 
   app.get("/api/payments", (req, res) => {
     const { clientName } = req.query;
-  
+ 
     if (!clientName) {
       return res.status(400).json({ error: "Client name is required" });
     }
-  
+ 
     const query = "SELECT * FROM payments WHERE name = ? ORDER BY payment_date DESC LIMIT 5";
     conn.query(query, [clientName], (err, results) => {
       if (err) {

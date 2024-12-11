@@ -161,7 +161,7 @@ const ClientDashboard = ({ navigation }) => {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
-          timeout: 50000, 
+          timeout: 50000,
         }
       );
 

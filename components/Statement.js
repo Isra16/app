@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -68,16 +67,27 @@ const Statement = ({ navigation }) => {
 
   const renderItem = ({ item }) => (
     <View style={styles.paymentItem}>
-      <Text style={styles.paymentAmount}>${item.amount_paid}</Text>
-      <Text style={styles.paymentDate}>
-        {new Date(item.payment_date).toLocaleDateString()}
+      <Text style={styles.paymentField}>
+        <Text style={styles.fieldLabel}>ID:</Text> {item.id}
       </Text>
-      <TouchableOpacity
-        onPress={() => toggleImage(item.screenshot_url)}
-        style={styles.iconContainer}
-      >
-        <Icon name="photo-camera" size={28} color="black" />
-      </TouchableOpacity>
+      <Text style={styles.paymentField}>
+        <Text style={styles.fieldLabel}>Client:</Text> {item.client_name}
+      </Text>
+      <Text style={styles.paymentField}>
+        <Text style={styles.fieldLabel}>Amount Paid:</Text> ${item.amount_paid}
+      </Text>
+      <Text style={styles.paymentField}>
+        <Text style={styles.fieldLabel}>Date:</Text>{" "}
+        {new Date(item.payment_date).toLocaleString()}
+      </Text>
+      {item.screenshot_url && (
+        <TouchableOpacity
+          onPress={() => toggleImage(item.screenshot_url)}
+          style={styles.iconContainer}
+        >
+          <Icon name="photo-camera" size={28} color="black" />
+        </TouchableOpacity>
+      )}
     </View>
   );
 
@@ -138,23 +148,27 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   paymentItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: "column",
     paddingVertical: 10,
     paddingHorizontal: 15,
     borderBottomWidth: 1,
     borderBottomColor: "#ccc",
+    backgroundColor: "#fff",
+    marginVertical: 5,
+    borderRadius: 8,
   },
-  paymentAmount: {
+  paymentField: {
     fontSize: 16,
+    marginVertical: 2,
+    color: "#333",
   },
-  paymentDate: {
-    fontSize: 16,
-    color: "#888",
+  fieldLabel: {
+    fontWeight: "bold",
+    color: "#555",
   },
   iconContainer: {
-    justifyContent: "center",
-    alignItems: "center",
+    marginTop: 10,
+    alignSelf: "flex-start",
   },
   loadingContainer: {
     flex: 1,

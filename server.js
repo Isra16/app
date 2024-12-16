@@ -260,7 +260,7 @@ app.post("/add-payment", (req, res) => {
       return res.status(400).json({ error: "Client name is required" });
     }
  
-    const query = "SELECT * FROM payments WHERE name = ? ORDER BY payment_date DESC LIMIT 5";
+    const query = "SELECT * FROM payments WHERE client_name = ? ORDER BY payment_date DESC LIMIT 5";
     conn.query(query, [clientName], (err, results) => {
       if (err) {
         console.error("Error fetching payments:", err.message);

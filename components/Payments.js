@@ -12,7 +12,7 @@ const Payments = ({ navigation }) => {
 
     const fetchData = async () => {
         try {
-            const response = await fetch('https://jeywb7rn6x.us-east-1.awsapprunner.com/clients');
+            const response = await fetch('https://jeywb7rn6x.us-east-1.awsapprunner.com/all-clients');
             if (!response.ok) {
                 throw new Error('Network response was not ok');
             }

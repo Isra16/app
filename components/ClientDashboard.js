@@ -12,12 +12,14 @@ import {
 import Footer from "./Footer";
 import axios from "axios";
 import Icon from "react-native-vector-icons/MaterialIcons";
+import { launchImageLibrary } from "react-native-image-picker";
 
 const ClientDashboard = ({ navigation }) => {
   const [data, setData] = useState(null);
   const [arrears, setArrears] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [recentPaymentsLoading, setRecentPaymentsLoading] = useState(false); // Loading for recent payments
   const [recentPayments, setRecentPayments] = useState([]); // State for recent payments
 
   const currentDate = new Date();
@@ -57,37 +59,38 @@ const ClientDashboard = ({ navigation }) => {
 
 
   useEffect(() => {
+    // Fetch recent payments if client data is loaded
     const fetchRecentPayments = async () => {
+      if (!data?.name) return;
+
+      setRecentPaymentsLoading(true);
       try {
         const response = await axios.get(
           "https://jeywb7rn6x.us-east-1.awsapprunner.com/recent-payments",
-          {
-            params: { clientName: name }, // Pass client name as a query parameter
-          }
+          { params: { clientName: data.name } } // Pass client name dynamically
         );
-  
+
         if (response.status === 200) {
-          setRecentPayments(response.data.payments);
+          setRecentPayments(response.data);
         } else {
-          Alert.alert("Error", "Failed to fetch recent payments");
+          throw new Error("Failed to fetch recent payments");
         }
       } catch (err) {
         console.error(err.message);
         Alert.alert("Error", err.message);
+      } finally {
+        setRecentPaymentsLoading(false);
       }
     };
-  
-    if (name) {
-      fetchRecentPayments(); // Fetch payments only if the client's name is available
-    }
-  }, [name]);
-  
 
-  const handlePayFull = async () => {
+    if (data) fetchRecentPayments();
+  }, [data]);
+
+  const handlePayMonthly = async () => {
     const paymentDate = new Date().toISOString().split("T")[0]; // Format date as YYYY-MM-DD
     const paymentData = {
-      clientName: name, // Name retrieved from the screen
-      amountPaid: totalAmount,
+      clientName: name, // Name retrieved from the API
+      amountPaid: amount, // Monthly charges retrieved from the API
       paymentDate: paymentDate,
     };
   
@@ -98,15 +101,88 @@ const ClientDashboard = ({ navigation }) => {
       );
   
       if (response.status === 201) {
-        Alert.alert("Success", "Payment recorded successfully");
+        Alert.alert("Success", "Monthly payment recorded successfully");
+  
+        // Prompt user to upload a screenshot
+        launchImageLibrary(
+          { mediaType: "photo" },
+          async (imageResponse) => {
+            if (imageResponse.didCancel) {
+              console.log("User cancelled image picker");
+              return;
+            }
+  
+            if (imageResponse.assets && imageResponse.assets.length > 0) {
+              const formData = new FormData();
+              formData.append("clientName", name);
+              formData.append("amountPaid", amount);
+              formData.append("paymentDate", paymentDate);
+              formData.append("screenshot", {
+                uri: imageResponse.assets[0].uri,
+                name: imageResponse.assets[0].fileName,
+                type: imageResponse.assets[0].type,
+              });
+  
+              try {
+                const uploadResponse = await axios.post(
+                  "https://jeywb7rn6x.us-east-1.awsapprunner.com/add-payment",
+                  formData,
+                  {
+                    headers: {
+                      "Content-Type": "multipart/form-data",
+                    },
+                  }
+                );
+                if (uploadResponse.status === 201) {
+                  Alert.alert("Success", "Screenshot uploaded successfully");
+                }
+              } catch (err) {
+                console.error("Error uploading screenshot:", err.message);
+                Alert.alert("Error", "Failed to upload screenshot");
+              }
+            }
+          }
+        );
       } else {
-        Alert.alert("Error", "Failed to record payment");
+        Alert.alert("Error", "Failed to record monthly payment");
       }
     } catch (error) {
       Alert.alert("Error", error.message);
     }
   };
-  
+
+  const handlePayFull = async () => {
+    const paymentDate = new Date().toISOString().split("T")[0]; // Format date as YYYY-MM-DD
+    const paymentData = new FormData();
+    paymentData.append('clientName', name);  // Name retrieved from the screen
+    paymentData.append('amountPaid', totalAmount);
+    paymentData.append('paymentDate', paymentDate);
+    
+    // Assume user picks a screenshot using file picker
+    if (screenshot) {
+        paymentData.append('screenshot', {
+            uri: screenshot.uri, // The URI of the selected image
+            type: 'image/png',    // Set the image type (PNG)
+            name: 'screenshot.png', // Set the name of the file
+        });
+    }
+
+    try {
+        const response = await axios.post(
+            "https://jeywb7rn6x.us-east-1.awsapprunner.com/add-payment",
+            paymentData,
+            { headers: { 'Content-Type': 'multipart/form-data' } }
+        );
+
+        if (response.status === 201) {
+            Alert.alert("Success", "Payment recorded successfully");
+        } else {
+            Alert.alert("Error", "Failed to record payment");
+        }
+    } catch (error) {
+        Alert.alert("Error", error.message);
+    }
+};
 
   if (loading) {
     return (
@@ -166,22 +242,30 @@ const ClientDashboard = ({ navigation }) => {
             >
               <Text style={styles.payButtonText}>Pay Full</Text>
             </TouchableOpacity>
+            <TouchableOpacity style={styles.payButton} onPress={handlePayMonthly}>
+    <Text style={styles.payButtonText}>Pay Monthly</Text>
+  </TouchableOpacity>
           </View>
           <View style={styles.recentPayments}>
-  <Text style={styles.recentPaymentsTitle}>Recent Payments</Text>
-  {recentPayments.length > 0 ? (
-    recentPayments.map((payment, index) => (
-      <View key={index} style={styles.paymentItem}>
-        <Text style={styles.paymentAmount}>Amount Paid: {payment.amountPaid}</Text>
-        <Text style={styles.paymentDate}>
-          Date: {new Date(payment.paymentDate).toLocaleDateString()}
-        </Text>
-      </View>
-    ))
-  ) : (
-    <Text style={styles.paymentDate}>No recent payments found.</Text>
-  )}
-</View>
+              <Text style={styles.recentPaymentsTitle}>Recent Payments</Text>
+              {recentPaymentsLoading ? (
+                <ActivityIndicator size="small" color="#1e90ff" />
+              ) : recentPayments.length > 0 ? (
+                recentPayments.map((payment, index) => (
+                  <View key={index} style={styles.paymentItem}>
+                    <Text style={styles.paymentAmount}>
+                       {payment.amount_paid}
+                    </Text>
+                    <Text style={styles.paymentDate}>
+                      
+                      {new Date(payment.payment_date).toLocaleDateString()}
+                    </Text>
+                  </View>
+                ))
+              ) : (
+                <Text style={styles.paymentDate}>No recent payments found.</Text>
+              )}
+            </View>
 
         </View>
       </View>

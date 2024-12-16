@@ -195,76 +195,83 @@ app.delete('/clients/:name', (req, res) => {
 });
 
 
-app.post('/api/payments', upload.single('file'), async (req, res) => {
-    const { file } = req;
-    if (!file) {
-        return res.status(400).json({ message: 'No file uploaded' });
-    }
+// app.post('/api/payments', upload.single('file'), async (req, res) => {
+//     const { file } = req;
+//     if (!file) {
+//         return res.status(400).json({ message: 'No file uploaded' });
+//     }
 
-    const fileKey = `${Date.now()}-${file.originalname}`;
+//     const fileKey = `${Date.now()}-${file.originalname}`;
 
-    try {
-        console.log("Uploading file to S3:", fileKey, file.mimetype);  
+//     try {
+//         console.log("Uploading file to S3:", fileKey, file.mimetype);  
 
-        const uploadParams = {
-            Bucket: bucketName,
-            Key: fileKey,
-            Body: file.buffer,
-            ContentType: file.mimetype,
-        };
+//         const uploadParams = {
+//             Bucket: bucketName,
+//             Key: fileKey,
+//             Body: file.buffer,
+//             ContentType: file.mimetype,
+//         };
 
        
-        console.log("S3 Upload Params:", uploadParams);
+//         console.log("S3 Upload Params:", uploadParams);
 
-        await s3Client.send(new PutObjectCommand(uploadParams));
-        const fileUrl = `https://${bucketName}.s3.amazonaws.com/${fileKey}`;
+//         await s3Client.send(new PutObjectCommand(uploadParams));
+//         const fileUrl = `https://${bucketName}.s3.amazonaws.com/${fileKey}`;
 
-        const sql = 'INSERT INTO uploads (image_url) VALUES (?)';
-        conn.query(sql, [fileUrl], (error) => {
-            if (error) {
-                console.error('MySQL Insert Error:', error);
-                return res.status(500).json({ message: 'Error saving file URL' });
-            }
-            res.status(200).json({ url: fileUrl });
-        });
-    } catch (err) {
-        console.error('S3 Upload Error:', err);
-        res.status(500).json({ message: 'Error uploading file to S3' });
+//         const sql = 'INSERT INTO uploads (image_url) VALUES (?)';
+//         conn.query(sql, [fileUrl], (error) => {
+//             if (error) {
+//                 console.error('MySQL Insert Error:', error);
+//                 return res.status(500).json({ message: 'Error saving file URL' });
+//             }
+//             res.status(200).json({ url: fileUrl });
+//         });
+//     } catch (err) {
+//         console.error('S3 Upload Error:', err);
+//         res.status(500).json({ message: 'Error uploading file to S3' });
+//     }
+// });
+
+app.post("/add-payment", async (req, res) => {
+    const { clientName, amountPaid, paymentDate } = req.body;
+  
+    if (!clientName || !amountPaid || !paymentDate) {
+      return res.status(400).json({ error: "Missing required fields" });
     }
-});
-
-app.post("/api/payments", (req, res) => {
-    const { name, totalAmount } = req.body;
-    const paymentDate = new Date().toISOString(); // Store the current date and time
- 
-    const query = `
-      INSERT INTO payments (name, total_amount, payment_date)
-      VALUES (?, ?, ?)
-    `;
-   
-    conn.query(query, [name, totalAmount, paymentDate], (err, result) => {
-      if (err) {
-        console.error(err);
-        return res.status(500).json({ message: "Payment failed" });
-      }
-      return res.status(200).json({ message: "Payment successful" });
-    });
-  });
-
-
-  app.get("/api/payments", (req, res) => {
-    const { clientName } = req.query;
- 
-    if (!clientName) {
-      return res.status(400).json({ error: "Client name is required" });
+  
+    const connection = await mysql.createConnection(dbConfig);
+  
+    try {
+      // Insert payment record with clientName
+      await connection.execute(
+        "INSERT INTO payments (client_name, amount_paid, payment_date) VALUES (?, ?, ?)",
+        [clientName, amountPaid, paymentDate]
+      );
+  
+      res.status(201).json({ message: "Payment added successfully" });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "An error occurred while adding the payment" });
+    } finally {
+      connection.end();
     }
- 
-    const query = "SELECT * FROM payments WHERE name = ? ORDER BY payment_date DESC LIMIT 5";
-    conn.query(query, [clientName], (err, results) => {
-      if (err) {
-        console.error("Error fetching payments:", err.message);
-        return res.status(500).json({ error: "Internal server error" });
-      }
-      res.json(results);
-    });
   });
+  
+  
+//   app.get("/api/payments", (req, res) => {
+//     const { clientName } = req.query;
+ 
+//     if (!clientName) {
+//       return res.status(400).json({ error: "Client name is required" });
+//     }
+ 
+//     const query = "SELECT * FROM payments WHERE name = ? ORDER BY payment_date DESC LIMIT 5";
+//     conn.query(query, [clientName], (err, results) => {
+//       if (err) {
+//         console.error("Error fetching payments:", err.message);
+//         return res.status(500).json({ error: "Internal server error" });
+//       }
+//       res.json(results);
+//     });
+//   });

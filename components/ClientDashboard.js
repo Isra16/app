@@ -260,8 +260,7 @@ const ClientDashboard = ({ navigation }) => {
                       
                       {new Date(payment.payment_date).toLocaleDateString()}
                     </Text>
- <Text>{payment.screenshot_url}</Text>
-                
+                    <Text>{payment.screenshot_url}</Text>
                   </View>
                 ))
               ) : (

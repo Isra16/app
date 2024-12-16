@@ -232,7 +232,6 @@ app.delete('/clients/:name', (req, res) => {
 //         res.status(500).json({ message: 'Error uploading file to S3' });
 //     }
 // });
-
 app.post("/add-payment", (req, res) => {
     const { clientName, amountPaid, paymentDate } = req.body;
   
@@ -253,19 +252,20 @@ app.post("/add-payment", (req, res) => {
   });
   
   
-//   app.get("/api/payments", (req, res) => {
-//     const { clientName } = req.query;
+  
+  app.get("/recent-payments", async (req, res) =>{
+    const { clientName } = req.query;
  
-//     if (!clientName) {
-//       return res.status(400).json({ error: "Client name is required" });
-//     }
+    if (!clientName) {
+      return res.status(400).json({ error: "Client name is required" });
+    }
  
-//     const query = "SELECT * FROM payments WHERE name = ? ORDER BY payment_date DESC LIMIT 5";
-//     conn.query(query, [clientName], (err, results) => {
-//       if (err) {
-//         console.error("Error fetching payments:", err.message);
-//         return res.status(500).json({ error: "Internal server error" });
-//       }
-//       res.json(results);
-//     });
-//   });
+    const query = "SELECT * FROM payments WHERE name = ? ORDER BY payment_date DESC LIMIT 5";
+    conn.query(query, [clientName], (err, results) => {
+      if (err) {
+        console.error("Error fetching payments:", err.message);
+        return res.status(500).json({ error: "Internal server error" });
+      }
+      res.json(results);
+    });
+  });

@@ -55,47 +55,30 @@ const ClientDashboard = ({ navigation }) => {
     fetchData();
   }, []);
 
-  // Handle "Pay Full" button click
   const handlePayFull = async () => {
-    const { name } = data || {};
-    const totalAmount = arrears + (data?.amount - data?.AmountPaid); // Total amount to be paid
-
+    const paymentDate = new Date().toISOString().split("T")[0]; // Format date as YYYY-MM-DD
     const paymentData = {
-      name: name,
-      total_amount: totalAmount,
-      payment_date: currentDate.toISOString(),
+      clientName: name, // Name retrieved from the screen
+      amountPaid: totalAmount,
+      paymentDate: paymentDate,
     };
-
+  
     try {
-      setLoading(true);
-
-      // Send POST request to the backend to save the payment
       const response = await axios.post(
-        "https://jeywb7rn6x.us-east-1.awsapprunner.com/api/payments", // Replace with your actual backend API URL
+        "https://jeywb7rn6x.us-east-1.awsapprunner.com/add-payment",
         paymentData
       );
-
-      if (response.status === 200) {
-        Alert.alert("Success", "Payment successfully recorded");
-
-        // Optionally, add the new payment to the recent payments list
-        setRecentPayments((prevPayments) => [
-          ...prevPayments,
-          {
-            total_amount: totalAmount,
-            payment_date: currentDate,
-          },
-        ]);
+  
+      if (response.status === 201) {
+        Alert.alert("Success", "Payment recorded successfully");
       } else {
-        throw new Error("Failed to record payment");
+        Alert.alert("Error", "Failed to record payment");
       }
-    } catch (err) {
-      setError(err.message);
-      Alert.alert("Error", err.message);
-    } finally {
-      setLoading(false);
+    } catch (error) {
+      Alert.alert("Error", error.message);
     }
   };
+  
 
   if (loading) {
     return (
@@ -158,18 +141,7 @@ const ClientDashboard = ({ navigation }) => {
           </View>
           <View style={styles.recentPayments}>
             <Text style={styles.recentPaymentsTitle}>Recent Payments</Text>
-            {recentPayments.length > 0 ? (
-              recentPayments.map((payment, index) => (
-                <View key={index} style={styles.paymentItem}>
-                  <Text style={styles.paymentAmount}>${payment.total_amount}</Text>
-                  <Text style={styles.paymentDate}>
-                    {new Date(payment.payment_date).toLocaleDateString()}
-                  </Text>
-                </View>
-              ))
-            ) : (
-              <Text style={styles.noPaymentsText}>No recent payments available</Text>
-            )}
+            
           </View>
         </View>
       </View>

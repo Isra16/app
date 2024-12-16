@@ -1,9 +1,30 @@
 import React from 'react';
-import { View, Modal, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import { View, Modal, StyleSheet, Text, TouchableOpacity, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
-const UserModal = ({ visible, onClose, onSignOut }) => {
+const UserModal = ({ visible, onClose }) => {
     const navigation = useNavigation();
+
+    const handleSignOut = async () => {
+        try {
+            const response = await fetch('https://jeywb7rn6x.us-east-1.awsapprunner.com/logout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+            });
+
+            if (response.ok) {
+                Alert.alert('Success', 'You have been logged out.');
+                navigation.navigate('LogoScreen');
+            } else {
+              
+                const data = await response.json();
+                Alert.alert('Error', data.message || 'Logout failed');
+            }
+        } catch (error) {
+            console.error('Logout Error:', error);
+            Alert.alert('Error', 'An error occurred during logout.');
+        }
+    };
 
     return (
         <Modal
@@ -14,11 +35,11 @@ const UserModal = ({ visible, onClose, onSignOut }) => {
         >
             <View style={styles.overlay}>
                 <View style={styles.modal}>
-                    <TouchableOpacity 
+                    <TouchableOpacity
                         onPress={() => {
                             navigation.navigate('ChangePassword');
                             onClose();
-                        }} 
+                        }}
                         style={styles.option}
                     >
                         <Text style={styles.optionText}>Change Password</Text>
@@ -26,7 +47,10 @@ const UserModal = ({ visible, onClose, onSignOut }) => {
 
                     <View style={styles.separator} />
 
-                    <TouchableOpacity onPress={() => { navigation.navigate('LogoScreen') }} style={styles.option}>
+                    <TouchableOpacity
+                        onPress={handleSignOut} 
+                        style={styles.option}
+                    >
                         <Text style={styles.optionText}>Sign Out</Text>
                     </TouchableOpacity>
                 </View>

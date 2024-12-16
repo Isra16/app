@@ -73,7 +73,6 @@ app.post('/admin/login', (req, res) => {
         if (results.length > 0) {
             const user = results[0];
             if (password === user.password) {
-                req.session.userId = user.id;
                 console.log('User authenticated:', user);
                 return res.status(200).json({ message: 'Login successful' });
             } else {
@@ -86,6 +85,7 @@ app.post('/admin/login', (req, res) => {
         }
     });
 });
+
 
 
 
@@ -117,6 +117,23 @@ app.post('/login', (req, res) => {
     });
 });
 
+
+app.post('/logout', (req, res) => {
+    if (req.session) {
+        req.session.destroy((err) => {
+            if (err) {
+                console.error('Error destroying session:', err);
+                return res.status(500).json({ message: 'Error logging out' });
+            }
+
+            res.status(200).json({ message: 'Logout successful' });
+        });
+    } else {
+        res.status(200).json({ message: 'No active session to log out from' });
+    }
+});
+
+
 app.get('/client', (req, res) => {
 
     if (!req.session.userId) {
@@ -137,6 +154,89 @@ app.get('/client', (req, res) => {
 });
 
 
+app.put('/admin-pass', (req, res) => {
+    const { id, oldPassword, newPassword } = req.body;
+    console.log(`Received request to update password for user ID: ${id}`);
+  
+    const fetchUserSql = 'SELECT * FROM user WHERE id = ?';
+    conn.query(fetchUserSql, [id], (error, results) => {
+        if (error) {
+            console.error('Error querying database:', error);
+            return res.status(500).json({ message: 'Database error' });
+        }
+  
+        if (results.length === 0) {
+            console.log('User not found');
+            return res.status(404).json({ message: 'User not found' });
+        }
+  
+        const user = results[0];
+        if (user.password !== oldPassword) {
+            console.log('Password update failed: Incorrect old password');
+            return res.status(401).json({ message: 'Incorrect old password' });
+        }
+  
+        const updatePasswordSql = 'UPDATE user SET password = ? WHERE id = ?';
+        conn.query(updatePasswordSql, [newPassword, id], (updateError, updateResult) => {
+            if (updateError) {
+                console.error('Error updating password:', updateError);
+                return res.status(500).json({ message: 'Failed to update password' });
+            }
+  
+            console.log(`Password updated successfully for user ID: ${id}`);
+            res.status(200).json({ message: 'Password updated successfully' });
+        });
+    });
+  });
+  
+
+
+  app.put('/user-pass', (req, res) => {
+    const { id, oldPassword, newPassword } = req.body;
+    console.log(`Received request to update password for user ID: ${id}`);
+  
+    const fetchUserSql = 'SELECT * FROM client WHERE id = ?';
+    conn.query(fetchUserSql, [id], (error, results) => {
+        if (error) {
+            console.error('Error querying database:', error);
+            return res.status(500).json({ message: 'Database error' });
+        }
+  
+        if (results.length === 0) {
+            console.log('User not found');
+            return res.status(404).json({ message: 'User not found' });
+        }
+  
+        const user = results[0];
+        if (user.password !== oldPassword) {
+            console.log('Password update failed: Incorrect old password');
+            return res.status(401).json({ message: 'Incorrect old password' });
+        }
+  
+        const updatePasswordSql = 'UPDATE client SET password = ? WHERE id = ?';
+        conn.query(updatePasswordSql, [newPassword, id], (updateError, updateResult) => {
+            if (updateError) {
+                console.error('Error updating password:', updateError);
+                return res.status(500).json({ message: 'Failed to update password' });
+            }
+  
+            console.log(`Password updated successfully for user ID: ${id}`);
+            res.status(200).json({ message: 'Password updated successfully' });
+        });
+    });
+  });
+
+
+  app.get("/all-clients", (req, res) => {
+    conn.query("SELECT * FROM client", (error, rows) => {
+        if (error) {
+            console.error('Error fetching data:', error);
+            return res.status(500).json({ message: 'Error fetching data' });
+        }
+        res.status(200).json(rows);
+    });
+  });
+
 app.post('/clients', (req, res) => {
   const { name, amount, AmountPaid, date } = req.body;
   if (!name || !amount || AmountPaid == null || !date) {
@@ -154,7 +254,7 @@ app.post('/clients', (req, res) => {
 });
 
 
-app.put('/clients', (req, res) => {
+app.put('/client-update', (req, res) => {
   const { name, amount, newName, dueDate } = req.body;
   if (!name || amount == null || !newName || !dueDate) {
       return res.status(400).json({ message: 'Missing required fields' });

@@ -32,7 +32,7 @@ const ClientDetails = ({ route, navigation }) => {
         try {
             const selectedDate = date;
 
-            const response = await fetch(`https://jeywb7rn6x.us-east-1.awsapprunner.com/clients`, {
+            const response = await fetch(`https://jeywb7rn6x.us-east-1.awsapprunner.com/client-update`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

@@ -38,7 +38,7 @@ const Dashboard = ({ navigation }) => {
                     <Image source={require('../assets/par.png')} style={styles.buttonImage1} />
                     <Text style={styles.buttonText}>Payments</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Picture')}>
+                <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Statement')}>
                     <Image source={require('../assets/full.png')} style={styles.buttonImage2} />
                     <Text style={styles.buttonText}>Statement</Text>
                 </TouchableOpacity>

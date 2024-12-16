@@ -236,7 +236,7 @@ app.put('/admin-pass', (req, res) => {
         res.status(200).json(rows);
     });
   });
-app.post('/clients', (req, res) => {
+  app.post('/clients', (req, res) => {
     const { name, amount, AmountPaid, date } = req.body;
     
     // Check for required fields
@@ -269,6 +269,7 @@ app.post('/clients', (req, res) => {
         });
     });
 });
+
 
 
 app.put('/client-update', (req, res) => {
@@ -372,20 +373,12 @@ app.post("/add-payment", upload.single('screenshot'), async (req, res) => {
     });
   });
 
- app.get("/all-payments", (req, res) => {
-    const query = "SELECT * FROM payments ORDER BY payment_date DESC"; // Sorting by recent payments
-  
-    conn.query(query, (error, rows) => {
+  app.get("/all-payments", (req, res) => {
+    conn.query("SELECT * FROM payments", (error, rows) => {
       if (error) {
-        console.error("Error fetching data:", error.message);
+        console.error("Error fetching data:", error);
         return res.status(500).json({ message: "Error fetching data" });
       }
-  
-      if (rows.length === 0) {
-        return res.status(404).json({ message: "No payments found" });
-      }
-  
       res.status(200).json(rows);
     });
   });
-

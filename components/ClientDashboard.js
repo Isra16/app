@@ -10,8 +10,7 @@ import {
   Alert,
 } from "react-native";
 import Footer from "./Footer";
-import { launchImageLibrary } from 'react-native-image-picker';
-import axios from 'axios';
+import axios from "axios";
 import Icon from "react-native-vector-icons/MaterialIcons";
 
 const ClientDashboard = ({ navigation }) => {
@@ -27,7 +26,9 @@ const ClientDashboard = ({ navigation }) => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const response = await fetch("https://jeywb7rn6x.us-east-1.awsapprunner.com/client");
+        const response = await fetch(
+          "https://jeywb7rn6x.us-east-1.awsapprunner.com/client"
+        );
         if (!response.ok) throw new Error("Failed to fetch data");
         const result = await response.json();
 
@@ -54,38 +55,47 @@ const ClientDashboard = ({ navigation }) => {
     fetchData();
   }, []);
 
-  useEffect(() => {
-    if (data?.date && data?.amount && data?.AmountPaid) {
-      const dueDate = new Date(data.date);
-      const balance = data.amount - data.AmountPaid;
+  // Handle "Pay Full" button click
+  const handlePayFull = async () => {
+    const { name } = data || {};
+    const totalAmount = arrears + (data?.amount - data?.AmountPaid); // Total amount to be paid
 
-      if (currentDate > dueDate && balance > 0) {
-        setArrears(balance);
-      } else {
-        setArrears(0);
-      }
-    }
-  }, [currentDate, data]);
-
-  // Fetch recent payments for the client
-  useEffect(() => {
-    const fetchRecentPayments = async () => {
-      try {
-        const response = await fetch(
-          `https://jeywb7rn6x.us-east-1.awsapprunner.com/api/payments?clientName=${data?.name}`
-        );
-        if (!response.ok) throw new Error("Failed to fetch recent payments");
-        const payments = await response.json();
-        setRecentPayments(payments);
-      } catch (err) {
-        console.error(err.message);
-      }
+    const paymentData = {
+      name: name,
+      total_amount: totalAmount,
+      payment_date: currentDate.toISOString(),
     };
 
-    if (data?.name) {
-      fetchRecentPayments();
+    try {
+      setLoading(true);
+
+      // Send POST request to the backend to save the payment
+      const response = await axios.post(
+        "https://jeywb7rn6x.us-east-1.awsapprunner.com/api/payments", // Replace with your actual backend API URL
+        paymentData
+      );
+
+      if (response.status === 200) {
+        Alert.alert("Success", "Payment successfully recorded");
+
+        // Optionally, add the new payment to the recent payments list
+        setRecentPayments((prevPayments) => [
+          ...prevPayments,
+          {
+            total_amount: totalAmount,
+            payment_date: currentDate,
+          },
+        ]);
+      } else {
+        throw new Error("Failed to record payment");
+      }
+    } catch (err) {
+      setError(err.message);
+      Alert.alert("Error", err.message);
+    } finally {
+      setLoading(false);
     }
-  }, [data]);
+  };
 
   if (loading) {
     return (
@@ -107,76 +117,6 @@ const ClientDashboard = ({ navigation }) => {
   const balance = amount - AmountPaid;
   const totalAmount = balance + arrears;
 
-  const handlePayment = async () => {
-    try {
-      const paymentData = {
-        name: data.name,
-        totalAmount: totalAmount,
-      };
-
-      const response = await fetch("https://jeywb7rn6x.us-east-1.awsapprunner.com/api/payments", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(paymentData),
-      });
-
-      const result = await response.json();
-      if (response.ok) {
-        Alert.alert("Payment Successful", result.message, [
-          {
-            text: "Upload Screenshot",
-            onPress: () => handleUpload(), // Trigger the upload function
-          },
-        ]);
-
-      } else {
-        throw new Error(result.message || "Payment failed");
-      }
-    } catch (error) {
-      Alert.alert("Error", error.message);
-    }
-  };
-
-  const handleUpload = async () => {
-    if (!imageUri) {
-      setSuccessMessage('Please select an image first.');
-      return;
-    }
-
-    setIsUploading(true);
-    setSuccessMessage('');
-
-    const formData = new FormData();
-    formData.append('file', {
-      uri: imageUri,
-    });
-
-    try {
-      const res = await axios.post(
-        'https://jeywb7rn6x.us-east-1.awsapprunner.com/api/payments',
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-          timeout: 50000,
-        }
-      );
-
-      if (res.data && res.data.url) {
-        setUploadUrl(res.data.url);
-        setSuccessMessage('Image uploaded successfully!');
-      }
-    } catch (error) {
-      console.error('Error uploading image:', error.message);
-      setSuccessMessage('Failed to upload image. Please try again.');
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       <View>
@@ -197,7 +137,7 @@ const ClientDashboard = ({ navigation }) => {
           <View style={styles.content}>
             <View style={styles.nameRow}>
               <Text style={styles.softwareName}>{name}</Text>
-              <TouchableOpacity onPress={handleUpload} style={styles.iconContainer}>
+              <TouchableOpacity style={styles.iconContainer}>
                 <Icon name="photo-camera" size={28} color="black" />
               </TouchableOpacity>
             </View>
@@ -211,17 +151,7 @@ const ClientDashboard = ({ navigation }) => {
           <View style={styles.payment}>
             <TouchableOpacity
               style={styles.payButton}
-              onPress={() => {
-                Alert.alert(
-                  "Confirm Payment",
-                  `Are you sure you want to pay the full amount of $${totalAmount}?`,
-                  [
-                    { text: "Cancel", style: "cancel" },
-                    { text: "Yes", onPress: handlePayment },
-                  ],
-                  { cancelable: false }
-                );
-              }}
+              onPress={handlePayFull} // Add the function to handle payment
             >
               <Text style={styles.payButtonText}>Pay Full</Text>
             </TouchableOpacity>
@@ -232,7 +162,9 @@ const ClientDashboard = ({ navigation }) => {
               recentPayments.map((payment, index) => (
                 <View key={index} style={styles.paymentItem}>
                   <Text style={styles.paymentAmount}>${payment.total_amount}</Text>
-                  <Text style={styles.paymentDate}>{new Date(payment.payment_date).toLocaleDateString()}</Text>
+                  <Text style={styles.paymentDate}>
+                    {new Date(payment.payment_date).toLocaleDateString()}
+                  </Text>
                 </View>
               ))
             ) : (
@@ -245,6 +177,7 @@ const ClientDashboard = ({ navigation }) => {
     </SafeAreaView>
   );
 };
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,

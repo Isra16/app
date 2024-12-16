@@ -67,18 +67,11 @@ const Statement = ({ navigation }) => {
 
   const renderItem = ({ item }) => (
     <View style={styles.paymentItem}>
-      <Text style={styles.paymentField}>
-        <Text style={styles.fieldLabel}>ID:</Text> {item.id}
-      </Text>
-      <Text style={styles.paymentField}>
-        <Text style={styles.fieldLabel}>Client:</Text> {item.client_name}
-      </Text>
-      <Text style={styles.paymentField}>
-        <Text style={styles.fieldLabel}>Amount Paid:</Text> ${item.amount_paid}
-      </Text>
-      <Text style={styles.paymentField}>
-        <Text style={styles.fieldLabel}>Date:</Text>{" "}
-        {new Date(item.payment_date).toLocaleString()}
+        <Text style={styles.paymentAmount}>{item.client_name}
+        </Text>
+      <Text style={styles.paymentAmount}>{item.amount_paid}</Text>
+      <Text style={styles.paymentDate}>
+        {new Date(item.payment_date).toLocaleDateString()}
       </Text>
       {item.screenshot_url && (
         <TouchableOpacity
@@ -93,17 +86,19 @@ const Statement = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Icon name="arrow-back" size={28} color="black" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>All Payments</Text>
+      <View style={styles.recentPayments}>
+       
+        {payments.length > 0 ? (
+          <FlatList
+            data={payments}
+            renderItem={renderItem}
+            keyExtractor={(item, index) => index.toString()}
+          />
+        ) : (
+          <Text style={styles.paymentDate}>No payments found.</Text>
+        )}
       </View>
-      <FlatList
-        data={payments}
-        renderItem={renderItem}
-        keyExtractor={(item, index) => index.toString()}
-      />
+
       <Modal
         visible={imageVisible}
         transparent={true}
@@ -134,41 +129,37 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#E0F0FF",
-  },
-  header: {
-    flexDirection: "row",
     alignItems: "center",
-    padding: 10,
-    backgroundColor: "#fff",
-    elevation: 2,
+    justifyContent: "flex-start",
   },
-  headerTitle: {
-    fontSize: 20,
+  recentPayments: {
+    marginTop: 20,
+    width: "90%",
+  },
+  recentPaymentsTitle: {
+    fontSize: 18,
     fontWeight: "bold",
-    marginLeft: 10,
+    marginBottom: 10,
+    textAlign: "center",
   },
   paymentItem: {
-    flexDirection: "column",
-    paddingVertical: 10,
-    paddingHorizontal: 15,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 5,
     borderBottomWidth: 1,
     borderBottomColor: "#ccc",
-    backgroundColor: "#fff",
-    marginVertical: 5,
-    borderRadius: 8,
   },
-  paymentField: {
+  paymentAmount: {
     fontSize: 16,
-    marginVertical: 2,
-    color: "#333",
   },
-  fieldLabel: {
-    fontWeight: "bold",
-    color: "#555",
+  paymentDate: {
+    fontSize: 16,
+    color: "#888",
   },
   iconContainer: {
-    marginTop: 10,
-    alignSelf: "flex-start",
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 40,
   },
   loadingContainer: {
     flex: 1,

@@ -73,7 +73,6 @@ app.post('/admin/login', (req, res) => {
         if (results.length > 0) {
             const user = results[0];
             if (password === user.password) {
-                req.session.userId = user.id;
                 console.log('User authenticated:', user);
                 return res.status(200).json({ message: 'Login successful' });
             } else {
@@ -86,6 +85,7 @@ app.post('/admin/login', (req, res) => {
         }
     });
 });
+
 
 
 
@@ -137,6 +137,89 @@ app.get('/client', (req, res) => {
 });
 
 
+app.put('/admin-pass', (req, res) => {
+    const { id, oldPassword, newPassword } = req.body;
+    console.log(`Received request to update password for user ID: ${id}`);
+  
+    const fetchUserSql = 'SELECT * FROM user WHERE id = ?';
+    conn.query(fetchUserSql, [id], (error, results) => {
+        if (error) {
+            console.error('Error querying database:', error);
+            return res.status(500).json({ message: 'Database error' });
+        }
+  
+        if (results.length === 0) {
+            console.log('User not found');
+            return res.status(404).json({ message: 'User not found' });
+        }
+  
+        const user = results[0];
+        if (user.password !== oldPassword) {
+            console.log('Password update failed: Incorrect old password');
+            return res.status(401).json({ message: 'Incorrect old password' });
+        }
+  
+        const updatePasswordSql = 'UPDATE user SET password = ? WHERE id = ?';
+        conn.query(updatePasswordSql, [newPassword, id], (updateError, updateResult) => {
+            if (updateError) {
+                console.error('Error updating password:', updateError);
+                return res.status(500).json({ message: 'Failed to update password' });
+            }
+  
+            console.log(`Password updated successfully for user ID: ${id}`);
+            res.status(200).json({ message: 'Password updated successfully' });
+        });
+    });
+  });
+  
+
+
+  app.put('/user-pass', (req, res) => {
+    const { id, oldPassword, newPassword } = req.body;
+    console.log(`Received request to update password for user ID: ${id}`);
+  
+    const fetchUserSql = 'SELECT * FROM client WHERE id = ?';
+    conn.query(fetchUserSql, [id], (error, results) => {
+        if (error) {
+            console.error('Error querying database:', error);
+            return res.status(500).json({ message: 'Database error' });
+        }
+  
+        if (results.length === 0) {
+            console.log('User not found');
+            return res.status(404).json({ message: 'User not found' });
+        }
+  
+        const user = results[0];
+        if (user.password !== oldPassword) {
+            console.log('Password update failed: Incorrect old password');
+            return res.status(401).json({ message: 'Incorrect old password' });
+        }
+  
+        const updatePasswordSql = 'UPDATE client SET password = ? WHERE id = ?';
+        conn.query(updatePasswordSql, [newPassword, id], (updateError, updateResult) => {
+            if (updateError) {
+                console.error('Error updating password:', updateError);
+                return res.status(500).json({ message: 'Failed to update password' });
+            }
+  
+            console.log(`Password updated successfully for user ID: ${id}`);
+            res.status(200).json({ message: 'Password updated successfully' });
+        });
+    });
+  });
+
+
+  app.get("/all-clients", (req, res) => {
+    conn.query("SELECT * FROM client", (error, rows) => {
+        if (error) {
+            console.error('Error fetching data:', error);
+            return res.status(500).json({ message: 'Error fetching data' });
+        }
+        res.status(200).json(rows);
+    });
+  });
+
 app.post('/clients', (req, res) => {
   const { name, amount, AmountPaid, date } = req.body;
   if (!name || !amount || AmountPaid == null || !date) {
@@ -154,7 +237,7 @@ app.post('/clients', (req, res) => {
 });
 
 
-app.put('/clients', (req, res) => {
+app.put('/client-update', (req, res) => {
   const { name, amount, newName, dueDate } = req.body;
   if (!name || amount == null || !newName || !dueDate) {
       return res.status(400).json({ message: 'Missing required fields' });
@@ -195,57 +278,71 @@ app.delete('/clients/:name', (req, res) => {
 });
 
 
-app.post("/add-payment", upload.single('screenshot'), async (req, res) => {
-    const { clientName, amountPaid, paymentDate } = req.body;
-
-    if (!clientName || !amountPaid || !paymentDate) {
-        return res.status(400).json({ error: "Missing required fields" });
+app.post('/api/payments', upload.single('file'), async (req, res) => {
+    const { file } = req;
+    if (!file) {
+        return res.status(400).json({ message: 'No file uploaded' });
     }
 
-    let screenshotUrl = null;
+    const fileKey = `${Date.now()}-${file.originalname}`;
 
-    // If there's a screenshot, upload it to S3
-    if (req.file) {
-        const fileName = `payment_screenshot_${Date.now()}.png`;  // Use a unique name for the file
+    try {
+        console.log("Uploading file to S3:", fileKey, file.mimetype);  
+
         const uploadParams = {
             Bucket: bucketName,
-            Key: fileName,
-            Body: req.file.buffer,
-            ContentType: req.file.mimetype,
+            Key: fileKey,
+            Body: file.buffer,
+            ContentType: file.mimetype,
         };
 
-        try {
-            const command = new PutObjectCommand(uploadParams);
-            await s3Client.send(command);
-            screenshotUrl = `https://${bucketName}.s3.amazonaws.com/${fileName}`;
-        } catch (error) {
-            console.error("Error uploading screenshot:", error);
-            return res.status(500).json({ error: "Error uploading screenshot to S3" });
-        }
-    }
+       
+        console.log("S3 Upload Params:", uploadParams);
 
-    // Insert payment data into the database
-    const sql = "INSERT INTO payments (client_name, amount_paid, payment_date, screenshot_url) VALUES (?, ?, ?, ?)";
-    conn.query(sql, [clientName, amountPaid, paymentDate, screenshotUrl], (error, results) => {
-        if (error) {
-            console.error("Error inserting payment:", error);
-            return res.status(500).json({ error: "An error occurred while adding the payment" });
-        }
-        res.status(201).json({ message: "Payment added successfully", paymentId: results.insertId });
-    });
+        await s3Client.send(new PutObjectCommand(uploadParams));
+        const fileUrl = `https://${bucketName}.s3.amazonaws.com/${fileKey}`;
+
+        const sql = 'INSERT INTO uploads (image_url) VALUES (?)';
+        conn.query(sql, [fileUrl], (error) => {
+            if (error) {
+                console.error('MySQL Insert Error:', error);
+                return res.status(500).json({ message: 'Error saving file URL' });
+            }
+            res.status(200).json({ url: fileUrl });
+        });
+    } catch (err) {
+        console.error('S3 Upload Error:', err);
+        res.status(500).json({ message: 'Error uploading file to S3' });
+    }
 });
 
-  
-  
-  app.get("/recent-payments", async (req, res) =>{
+app.post("/api/payments", (req, res) => {
+    const { name, totalAmount } = req.body;
+    const paymentDate = new Date().toISOString(); // Store the current date and time
+ 
+    const query = `
+      INSERT INTO payments (name, total_amount, payment_date)
+      VALUES (?, ?, ?)
+    `;
+   
+    conn.query(query, [name, totalAmount, paymentDate], (err, result) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ message: "Payment failed" });
+      }
+      return res.status(200).json({ message: "Payment successful" });
+    });
+  });
+
+
+  app.get("/api/payments", (req, res) => {
     const { clientName } = req.query;
  
     if (!clientName) {
       return res.status(400).json({ error: "Client name is required" });
     }
  
-    const query = "SELECT amount_paid, payment_date FROM payments WHERE client_name = ? ORDER BY payment_date DESC LIMIT 5";
-
+    const query = "SELECT * FROM payments WHERE name = ? ORDER BY payment_date DESC LIMIT 5";
     conn.query(query, [clientName], (err, results) => {
       if (err) {
         console.error("Error fetching payments:", err.message);

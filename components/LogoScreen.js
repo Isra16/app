@@ -38,57 +38,53 @@ const LogoScreen = () => {
   
     
     const newErrors = validateInputs(userid, password);
+  
     if (newErrors) {
       setErrors(newErrors);
       return; 
     }
-  
-    try {
-  
-      const clientResponse = await fetch('https://jeywb7rn6x.us-east-1.awsapprunner.com/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: userid, password }),
-      });
-  
-      const clientResult = await clientResponse.json();
-  
-      if (clientResponse.ok) {
 
-        setLoginMessage('Client Login Successful');
-        console.log('Client Login Result:', clientResult);
-        navigation.navigate('UserPanel');
-        return; 
-      }
-  
-    
-      console.log('Client Login Failed:', clientResult.message);
-  
-      const adminResponse = await fetch('https://jeywb7rn6x.us-east-1.awsapprunner.com/admin/login', {
+    try {
+      // Call the first login API
+      const response = await fetch('https://jeywb7rn6x.us-east-1.awsapprunner.com/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: userid, password }),
       });
   
-      const adminResult = await adminResponse.json();
+      const result = await response.json();
   
-      if (adminResponse.ok) {
+      if (response.ok) {
+        setLoginMessage('Login Successful');
+        console.log('First API Login Result:', result);
+  
       
-        setLoginMessage('Admin Login Successful');
-        console.log('Admin Login Result:', adminResult);
-        navigation.navigate('Dashboard');
+        const adminResponse = await fetch('https://jeywb7rn6x.us-east-1.awsapprunner.com/admin/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ id: userid, password }),
+        });
+  
+        const adminResult = await adminResponse.json();
+  
+        if (adminResponse.ok) {
+          console.log('Admin Login Successful:', adminResult);
+          setLoginMessage('Admin Login Successful');
+        } else {
+          console.error('Admin Login Failed:', adminResult.message);
+          throw new Error(adminResult.message || 'Admin login failed');
+        }
       } else {
-       
-        console.log('Admin Login Failed:', adminResult.message);
-        throw new Error(adminResult.message || 'Login failed');
+        console.error('Login Failed:', result.message);
+        throw new Error(result.message || 'Login failed');
       }
     } catch (error) {
-      console.error('Error:', error.message);
       setLoginMessage(error.message);
     }
   };
   
-
   useEffect(() => {
     Animated.timing(slideAnim, {
       toValue: 0,

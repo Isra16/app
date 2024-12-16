@@ -12,12 +12,14 @@ import {
 import Footer from "./Footer";
 import axios from "axios";
 import Icon from "react-native-vector-icons/MaterialIcons";
+import { launchImageLibrary } from "react-native-image-picker";
 
 const ClientDashboard = ({ navigation }) => {
   const [data, setData] = useState(null);
   const [arrears, setArrears] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [recentPaymentsLoading, setRecentPaymentsLoading] = useState(false); // Loading for recent payments
   const [recentPayments, setRecentPayments] = useState([]); // State for recent payments
 
   const currentDate = new Date();
@@ -27,12 +29,7 @@ const ClientDashboard = ({ navigation }) => {
       setLoading(true);
       try {
         const response = await fetch("https://jeywb7rn6x.us-east-1.awsapprunner.com/client");
-        
-        // Check if the response is OK
-        if (!response.ok) {
-          throw new Error("Failed to fetch data");
-        }
-  
+        if (!response.ok) throw new Error("Failed to fetch data");
         const result = await response.json();
   
         if (result.date) {
@@ -58,31 +55,38 @@ const ClientDashboard = ({ navigation }) => {
     fetchData();
   }, []);
 
+  useEffect(() => {
+    if (data?.date && data?.amount && data?.AmountPaid) {
+      const dueDate = new Date(data.date);
+      const balance = data.amount - data.AmountPaid;
 
-  const handlePayFull = async () => {
-    const paymentDate = new Date().toISOString().split("T")[0]; // Format date as YYYY-MM-DD
-    const paymentData = {
-      clientName: name, // Name retrieved from the screen
-      amountPaid: totalAmount,
-      paymentDate: paymentDate,
-    };
-  
-    try {
-      const response = await axios.post(
-        "https://jeywb7rn6x.us-east-1.awsapprunner.com/add-payment",
-        paymentData
-      );
-  
-      if (response.status === 201) {
-        Alert.alert("Success", "Payment recorded successfully");
+      if (currentDate > dueDate && balance > 0) {
+        setArrears(balance);
       } else {
-        Alert.alert("Error", "Failed to record payment");
+        setArrears(0);
       }
-    } catch (error) {
-      Alert.alert("Error", error.message);
     }
-  };
-  
+  }, [currentDate, data]);
+
+  // Fetch recent payments for the client
+  useEffect(() => {
+    const fetchRecentPayments = async () => {
+      try {
+        const response = await fetch(
+          `https://jeywb7rn6x.us-east-1.awsapprunner.com/api/payments?clientName=${data?.name}`
+        );
+        if (!response.ok) throw new Error("Failed to fetch recent payments");
+        const payments = await response.json();
+        setRecentPayments(payments);
+      } catch (err) {
+        console.error(err.message);
+      }
+    };
+
+    if (data?.name) {
+      fetchRecentPayments();
+    }
+  }, [data]);
 
   if (loading) {
     return (
@@ -142,10 +146,22 @@ const ClientDashboard = ({ navigation }) => {
             >
               <Text style={styles.payButtonText}>Pay Full</Text>
             </TouchableOpacity>
+            <TouchableOpacity style={styles.payButton} onPress={handlePayMonthly}>
+    <Text style={styles.payButtonText}>Pay Monthly</Text>
+  </TouchableOpacity>
           </View>
           <View style={styles.recentPayments}>
             <Text style={styles.recentPaymentsTitle}>Recent Payments</Text>
-            
+            {recentPayments.length > 0 ? (
+              recentPayments.map((payment, index) => (
+                <View key={index} style={styles.paymentItem}>
+                  <Text style={styles.paymentAmount}>${payment.total_amount}</Text>
+                  <Text style={styles.paymentDate}>{new Date(payment.payment_date).toLocaleDateString()}</Text>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.noPaymentsText}>No recent payments available</Text>
+            )}
           </View>
         </View>
       </View>

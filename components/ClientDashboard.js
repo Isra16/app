@@ -28,7 +28,7 @@ const ClientDashboard = ({ navigation }) => {
       try {
         const response = await fetch("https://jeywb7rn6x.us-east-1.awsapprunner.com/client");
         
-        // Check if the response is OK
+    
         if (!response.ok) {
           throw new Error("Failed to fetch data");
         }
@@ -60,9 +60,9 @@ const ClientDashboard = ({ navigation }) => {
 
 
   const handlePayFull = async () => {
-    const paymentDate = new Date().toISOString().split("T")[0]; // Format date as YYYY-MM-DD
+    const paymentDate = new Date().toISOString().split("T")[0];
     const paymentData = {
-      clientName: name, // Name retrieved from the screen
+      clientName: name, 
       amountPaid: totalAmount,
       paymentDate: paymentDate,
     };

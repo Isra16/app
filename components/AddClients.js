@@ -9,7 +9,6 @@ const AddClients = ({ navigation }) => {
     const [date, setDate] = useState(new Date());
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [errors, setErrors] = useState({});
-
     const handleSave = async () => {
         try {
             const response = await fetch('https://jeywb7rn6x.us-east-1.awsapprunner.com/clients', {
@@ -24,14 +23,15 @@ const AddClients = ({ navigation }) => {
                     date: new Date(date).toISOString().split('T')[0],
                 }),
             });
-
+    
             const textResponse = await response.text();
             const result = JSON.parse(textResponse);
-
+    
             if (response.ok) {
+                // Correctly access id and password from result.client
                 Alert.alert(
                     'Success',
-                    `Client Added Successfully!\n\nID: ${result.id}\nPassword: ${result.password}\nName: ${name}\nAmount: ${amount}\nDate: ${new Date(date).toLocaleDateString()}`
+                    `Client Added Successfully!\n\nID: ${result.client.id}\nPassword: ${result.client.password}\nName: ${result.client.name}\nAmount: ${result.client.amount}\nAmount Paid: ${result.client.AmountPaid}\nDate: ${result.client.date}`
                 );
                 navigation.navigate('Dashboard');
             } else {
@@ -41,6 +41,7 @@ const AddClients = ({ navigation }) => {
             Alert.alert('Error', 'Something went wrong. Please try again.');
         }
     };
+    
 
     const validateInputs = (name, amount, AmountPaid) => {
         const newErrors = {};

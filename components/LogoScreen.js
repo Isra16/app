@@ -55,7 +55,7 @@ const LogoScreen = () => {
   
       if (clientResponse.ok) {
 
-        setLoginMessage('Client Login Successful');
+        setLoginMessage('Login Successful');
         console.log('Client Login Result:', clientResult);
         navigation.navigate('UserPanel');
         return; 
@@ -74,7 +74,7 @@ const LogoScreen = () => {
   
       if (adminResponse.ok) {
       
-        setLoginMessage('Admin Login Successful');
+        setLoginMessage('Login Successful');
         console.log('Admin Login Result:', adminResult);
         navigation.navigate('Dashboard');
       } else {

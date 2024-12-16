@@ -55,6 +55,34 @@ const ClientDashboard = ({ navigation }) => {
     fetchData();
   }, []);
 
+
+  useEffect(() => {
+    const fetchRecentPayments = async () => {
+      try {
+        const response = await axios.get(
+          "https://jeywb7rn6x.us-east-1.awsapprunner.com/recent-payments",
+          {
+            params: { clientName: name }, // Pass client name as a query parameter
+          }
+        );
+  
+        if (response.status === 200) {
+          setRecentPayments(response.data.payments);
+        } else {
+          Alert.alert("Error", "Failed to fetch recent payments");
+        }
+      } catch (err) {
+        console.error(err.message);
+        Alert.alert("Error", err.message);
+      }
+    };
+  
+    if (name) {
+      fetchRecentPayments(); // Fetch payments only if the client's name is available
+    }
+  }, [name]);
+  
+
   const handlePayFull = async () => {
     const paymentDate = new Date().toISOString().split("T")[0]; // Format date as YYYY-MM-DD
     const paymentData = {
@@ -140,9 +168,21 @@ const ClientDashboard = ({ navigation }) => {
             </TouchableOpacity>
           </View>
           <View style={styles.recentPayments}>
-            <Text style={styles.recentPaymentsTitle}>Recent Payments</Text>
-            
-          </View>
+  <Text style={styles.recentPaymentsTitle}>Recent Payments</Text>
+  {recentPayments.length > 0 ? (
+    recentPayments.map((payment, index) => (
+      <View key={index} style={styles.paymentItem}>
+        <Text style={styles.paymentAmount}>Amount Paid: {payment.amountPaid}</Text>
+        <Text style={styles.paymentDate}>
+          Date: {new Date(payment.paymentDate).toLocaleDateString()}
+        </Text>
+      </View>
+    ))
+  ) : (
+    <Text style={styles.paymentDate}>No recent payments found.</Text>
+  )}
+</View>
+
         </View>
       </View>
       <Footer navigation={navigation} />

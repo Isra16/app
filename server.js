@@ -233,29 +233,23 @@ app.delete('/clients/:name', (req, res) => {
 //     }
 // });
 
-app.post("/add-payment", async (req, res) => {
+app.post("/add-payment", (req, res) => {
     const { clientName, amountPaid, paymentDate } = req.body;
   
     if (!clientName || !amountPaid || !paymentDate) {
       return res.status(400).json({ error: "Missing required fields" });
     }
   
-    const connection = await mysql.createConnection(dbConfig);
+    const sql = "INSERT INTO payments (client_name, amount_paid, payment_date) VALUES (?, ?, ?)";
   
-    try {
-      // Insert payment record with clientName
-      await connection.execute(
-        "INSERT INTO payments (client_name, amount_paid, payment_date) VALUES (?, ?, ?)",
-        [clientName, amountPaid, paymentDate]
-      );
+    conn.query(sql, [clientName, amountPaid, paymentDate], (error, results) => {
+      if (error) {
+        console.error("Error inserting payment:", error);
+        return res.status(500).json({ error: "An error occurred while adding the payment" });
+      }
   
       res.status(201).json({ message: "Payment added successfully" });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "An error occurred while adding the payment" });
-    } finally {
-      connection.end();
-    }
+    });
   });
   
   

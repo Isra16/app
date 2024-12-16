@@ -15,7 +15,7 @@ import Clientd from './components/Clientd';
 import NotificationsA from './components/admin/AdminNotify';
 import UserModalA from './components/admin/AdminUModal';
 import ChangeOldPassword from './components/admin/AdminPassword';
-import Picture from './components/Picture';
+import Statement from './components/Statement';
 
 const Stack = createNativeStackNavigator();
 
@@ -90,8 +90,8 @@ const App = () => {
           options={{ headerShown: true }}
         />
         <Stack.Screen
-          name="Picture"
-          component={Picture}
+          name="Statement"
+          component={Statement}
           options={{ headerShown: true }}
         />
       </Stack.Navigator>

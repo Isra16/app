@@ -371,3 +371,21 @@ app.post("/add-payment", upload.single('screenshot'), async (req, res) => {
       res.json(results);
     });
   });
+
+ app.get("/all-payments", (req, res) => {
+    const query = "SELECT * FROM payments ORDER BY payment_date DESC"; // Sorting by recent payments
+  
+    conn.query(query, (error, rows) => {
+      if (error) {
+        console.error("Error fetching data:", error.message);
+        return res.status(500).json({ message: "Error fetching data" });
+      }
+  
+      if (rows.length === 0) {
+        return res.status(404).json({ message: "No payments found" });
+      }
+  
+      res.status(200).json(rows);
+    });
+  });
+

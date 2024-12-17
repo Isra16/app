@@ -8,7 +8,8 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
-  Modal
+  Modal,
+  BackHandler
 } from "react-native";
 import Footer from "./Footer";
 import axios from "axios";
@@ -25,7 +26,20 @@ const ClientDashboard = ({ navigation }) => {
   const [imageVisible, setImageVisible] = useState(false);
 
   const currentDate = new Date();
+  
+  useEffect(() => {
+    const backAction = () => {
 
+      BackHandler.exitApp();
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      backAction
+    );
+    return () => backHandler.remove();
+  }, []);
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);

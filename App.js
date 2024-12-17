@@ -1,4 +1,4 @@
-import { TouchableOpacity, Image } from 'react-native';
+import { Image } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import LogoScreen from './components/LogoScreen';
@@ -16,6 +16,7 @@ import NotificationsA from './components/admin/AdminNotify';
 import UserModalA from './components/admin/AdminUModal';
 import ChangeOldPassword from './components/admin/AdminPassword';
 import Statement from './components/Statement';
+import RecentPaymentList from "./components/RecentPaymentList";
 
 const Stack = createNativeStackNavigator();
 
@@ -29,6 +30,7 @@ const App = () => {
         <Stack.Screen name="LogoScreen" component={LogoScreen} />
         <Stack.Screen name="UserPanel" component={UserPanel} />
         <Stack.Screen name="Notification" component={Notifications} />
+        <Stack.Screen name="RecentPaymentList" component={RecentPaymentList} options={{ headerShown: true }} />
         <Stack.Screen
           name="ChangePassword"
           component={ChangePassword}

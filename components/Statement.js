@@ -86,42 +86,45 @@ const Statement = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.recentPayments}>
-       
-        {payments.length > 0 ? (
-          <FlatList
-            data={payments}
-            renderItem={renderItem}
-            keyExtractor={(item, index) => index.toString()}
+    <View style={styles.recentPayments}>
+      <Text style={styles.recentPaymentsTitle}>All Payments</Text>
+      {payments.length > 0 ? (
+        <FlatList
+          data={payments}
+          renderItem={renderItem}
+          keyExtractor={(item, index) => index.toString()}
+          showsVerticalScrollIndicator={true} // Show vertical scroll bar
+          contentContainerStyle={{ paddingBottom: 10 }} // Optional spacing
+        />
+      ) : (
+        <Text style={styles.paymentDate}>No payments found.</Text>
+      )}
+    </View>
+  
+    {/* Modal for image */}
+    <Modal
+      visible={imageVisible}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={() => toggleImage(null)}
+    >
+      <View style={styles.modalContainer}>
+        <TouchableOpacity
+          style={styles.closeButton}
+          onPress={() => toggleImage(null)}
+        >
+          <Text style={styles.closeButtonText}>Close</Text>
+        </TouchableOpacity>
+        {selectedImage && (
+          <Image
+            source={{ uri: selectedImage }}
+            style={styles.image}
+            resizeMode="contain"
           />
-        ) : (
-          <Text style={styles.paymentDate}>No payments found.</Text>
         )}
       </View>
-
-      <Modal
-        visible={imageVisible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => toggleImage(null)}
-      >
-        <View style={styles.modalContainer}>
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={() => toggleImage(null)}
-          >
-            <Text style={styles.closeButtonText}>Close</Text>
-          </TouchableOpacity>
-          {selectedImage && (
-            <Image
-              source={{ uri: selectedImage }}
-              style={styles.image}
-              resizeMode="contain"
-            />
-          )}
-        </View>
-      </Modal>
-    </SafeAreaView>
+    </Modal>
+  </SafeAreaView>
   );
 };
 

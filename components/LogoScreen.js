@@ -10,6 +10,7 @@ import {
   Platform,
   TouchableOpacity,
   TextInput,
+  BackHandler
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
@@ -31,6 +32,21 @@ const LogoScreen = () => {
     if (!pass) newErrors.password = 'Password is required';
     return Object.keys(newErrors).length ? newErrors : null;
   };
+  
+    useEffect(() => {
+      const backAction = () => {
+  
+        BackHandler.exitApp();
+        return true;
+      };
+  
+      const backHandler = BackHandler.addEventListener(
+        "hardwareBackPress",
+        backAction
+      );
+      return () => backHandler.remove();
+    }, []);
+  
 
   const buttonHandler = async () => {
     setErrors({}); 

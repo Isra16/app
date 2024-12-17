@@ -24,6 +24,7 @@ const ClientDashboard = ({ navigation }) => {
   const [recentPaymentsLoading, setRecentPaymentsLoading] = useState(false); // Loading for recent payments
   const [recentPayments, setRecentPayments] = useState([]); // State for recent payments
   const [imageVisible, setImageVisible] = useState(false);
+  const latestThreePayments = recentPayments.slice(0, 3);
 
   const currentDate = new Date();
   
@@ -40,6 +41,20 @@ const ClientDashboard = ({ navigation }) => {
     );
     return () => backHandler.remove();
   }, []);
+  useEffect(() => {
+    const backAction = () => {
+
+      BackHandler.exitApp();
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      backAction
+    );
+    return () => backHandler.remove();
+  }, []);
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
@@ -231,15 +246,7 @@ const ClientDashboard = ({ navigation }) => {
           source={require("../assets/Capture.png")}
           style={styles.topLeftImage}
         />
-        <TouchableOpacity
-          style={styles.topRightImage}
-          onPress={() => navigation.navigate("LogoScreen")}
-        >
-          <Image
-            source={require("../assets/23.png")}
-            style={styles.topRightImage}
-          />
-        </TouchableOpacity>
+    
         <View style={styles.main}>
           <View style={styles.content}>
             <View style={styles.nameRow}>
@@ -264,46 +271,51 @@ const ClientDashboard = ({ navigation }) => {
   </TouchableOpacity>
           </View>
           <View style={styles.recentPayments}>
-              <Text style={styles.recentPaymentsTitle}>Recent Payments</Text>
-              {recentPaymentsLoading ? (
-                <ActivityIndicator size="small" color="#1e90ff" />
-              ) : recentPayments.length > 0 ? (
-                recentPayments.map((payment, index) => (
-                  <View key={index} style={styles.paymentItem}>
-                    <Text style={styles.paymentAmount}>
-                       {payment.amount_paid}
-                    </Text>
-                    <Text style={styles.paymentDate}>
-                      
-                      {new Date(payment.payment_date).toLocaleDateString()}
-                    </Text>
-                    <TouchableOpacity onPress={toggleImage} style={styles.iconContainer}>
-        <Icon name="photo-camera" size={28} color="black" />
-      </TouchableOpacity>
-      <Modal
-        visible={imageVisible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={toggleImage}
-      >
-        <View style={styles.modalContainer}>
-          <TouchableOpacity style={styles.closeButton} onPress={toggleImage}>
-            <Text style={styles.closeButtonText}>Close</Text>
-          </TouchableOpacity>
-          <Image
-            source={{ uri: payment.screenshot_url }}
-            style={styles.image}
-            resizeMode="contain"
-          />
-        </View>
-      </Modal>
-    </View>
-      
-                ))
-              ) : (
-                <Text style={styles.paymentDate}>No recent payments found.</Text>
-              )}
-            </View>
+  <Text style={styles.recentPaymentsTitle}>Recent Payments</Text>
+
+  {recentPaymentsLoading ? (
+    <ActivityIndicator size="small" color="#1e90ff" />
+  ) : latestThreePayments.length > 0 ? (
+    latestThreePayments.map((payment, index) => (
+      <View key={index} style={styles.paymentItem}>
+        <Text style={styles.paymentDate}>
+          {new Date(payment.payment_date).toLocaleDateString()}
+        </Text>
+        <Text style={styles.paymentAmount}>{payment.amount_paid}</Text>
+        <TouchableOpacity onPress={toggleImage} style={styles.iconContainer}>
+          <Icon name="photo-camera" size={26} color="black" />
+        </TouchableOpacity>
+        <Modal
+          visible={imageVisible}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={toggleImage}
+        >
+          <View style={styles.modalContainer}>
+            <TouchableOpacity style={styles.closeButton} onPress={toggleImage}>
+              <Text style={styles.closeButtonText}>Close</Text>
+            </TouchableOpacity>
+            <Image
+              source={{ uri: payment.screenshot_url }}
+              style={styles.image}
+              resizeMode="contain"
+            />
+          </View>
+        </Modal>
+      </View>
+    ))
+  ) : (
+    <Text style={styles.paymentDate}>No recent payments found.</Text>
+  )}
+
+  {/* View All Button */}
+  <TouchableOpacity
+    style={styles.viewAllButton}
+    onPress={() => navigation.navigate("RecentPaymentList", { payments: recentPayments })}
+  >
+    <Text style={styles.viewAllText}>View All</Text>
+  </TouchableOpacity>
+</View>
 
         </View>
       </View>
@@ -451,7 +463,7 @@ const styles = StyleSheet.create({
   paymentDate: {
     fontSize: 16,
     color: '#888',
-    marginLeft:40
+    marginRight:25
   },
   iconContainer: {
     justifyContent: 'center',

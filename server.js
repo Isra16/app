@@ -363,7 +363,7 @@ app.post("/add-payment", upload.single('screenshot'), async (req, res) => {
       return res.status(400).json({ error: "Client name is required" });
     }
  
-    const query = "SELECT amount_paid, payment_date, screenshot_url FROM payments WHERE client_name = ? ORDER BY payment_date DESC LIMIT 5";
+ const query = "SELECT amount_paid, payment_date, screenshot_url FROM payments WHERE client_name = ? ORDER BY payment_date DESC";
 
     conn.query(query, [clientName], (err, results) => {
       if (err) {

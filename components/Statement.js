@@ -12,14 +12,21 @@ import {
   Alert,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import axios from "axios";
 
 const Statement = ({ navigation }) => {
   const [payments, setPayments] = useState([]);
+  const [filteredPayments, setFilteredPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [imageVisible, setImageVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
+
+  const [startDate, setStartDate] = useState(null);
+  const [endDate, setEndDate] = useState(null);
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
 
   useEffect(() => {
     const fetchPayments = async () => {
@@ -30,6 +37,7 @@ const Statement = ({ navigation }) => {
 
         if (response.status === 200) {
           setPayments(response.data);
+          setFilteredPayments(response.data); // Initially display all data
         } else {
           throw new Error("Failed to fetch payments");
         }
@@ -44,10 +52,22 @@ const Statement = ({ navigation }) => {
     fetchPayments();
   }, []);
 
-  const toggleImage = (imageUrl) => {
-    setSelectedImage(imageUrl);
-    setImageVisible(!imageVisible);
-  };
+const applyFilter = () => {
+  if (startDate && endDate) {
+    const adjustedEndDate = new Date(endDate);
+    adjustedEndDate.setHours(23, 59, 59, 999); // Include the entire end date
+
+    const filtered = payments.filter((item) => {
+      const paymentDate = new Date(item.payment_date);
+      return paymentDate >= startDate && paymentDate <= adjustedEndDate;
+    });
+
+    setFilteredPayments(filtered);
+  } else {
+    Alert.alert("Error", "Please select both start and end dates.");
+  }
+};
+
 
   if (loading) {
     return (
@@ -67,8 +87,7 @@ const Statement = ({ navigation }) => {
 
   const renderItem = ({ item }) => (
     <View style={styles.paymentItem}>
-        <Text style={styles.paymentAmount}>{item.client_name}
-        </Text>
+      <Text style={styles.paymentAmount}>{item.client_name}</Text>
       <Text style={styles.paymentAmount}>{item.amount_paid}</Text>
       <Text style={styles.paymentDate}>
         {new Date(item.payment_date).toLocaleDateString()}
@@ -86,45 +105,97 @@ const Statement = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-    <View style={styles.recentPayments}>
-      <Text style={styles.recentPaymentsTitle}>All Payments</Text>
-      {payments.length > 0 ? (
-        <FlatList
-          data={payments}
-          renderItem={renderItem}
-          keyExtractor={(item, index) => index.toString()}
-          showsVerticalScrollIndicator={true} // Show vertical scroll bar
-          contentContainerStyle={{ paddingBottom: 10 }} // Optional spacing
-        />
-      ) : (
-        <Text style={styles.paymentDate}>No payments found.</Text>
-      )}
-    </View>
-  
-    {/* Modal for image */}
-    <Modal
-      visible={imageVisible}
-      transparent={true}
-      animationType="fade"
-      onRequestClose={() => toggleImage(null)}
-    >
-      <View style={styles.modalContainer}>
-        <TouchableOpacity
-          style={styles.closeButton}
-          onPress={() => toggleImage(null)}
-        >
-          <Text style={styles.closeButtonText}>Close</Text>
+      {/* Filters Section */}
+      <View style={styles.filterContainer}>
+        <View style={styles.datePickerContainer}>
+          <Text style={styles.filterLabel}>Start Date:</Text>
+          <TouchableOpacity
+            onPress={() => setShowStartPicker(true)}
+            style={styles.datePickerButton}
+          >
+            <Text style={styles.datePickerText}>
+              {startDate ? startDate.toLocaleDateString() : "Select Date"}
+            </Text>
+          </TouchableOpacity>
+          {showStartPicker && (
+            <DateTimePicker
+              value={startDate || new Date()}
+              mode="date"
+              display="default"
+              onChange={(event, selectedDate) => {
+                setShowStartPicker(false); // Close the picker
+                if (selectedDate) setStartDate(selectedDate);
+              }}
+            />
+          )}
+        </View>
+        <View style={styles.datePickerContainer}>
+          <Text style={styles.filterLabel}>End Date:</Text>
+          <TouchableOpacity
+            onPress={() => setShowEndPicker(true)}
+            style={styles.datePickerButton}
+          >
+            <Text style={styles.datePickerText}>
+              {endDate ? endDate.toLocaleDateString() : "Select Date"}
+            </Text>
+          </TouchableOpacity>
+          {showEndPicker && (
+            <DateTimePicker
+              value={endDate || new Date()}
+              mode="date"
+              display="default"
+              onChange={(event, selectedDate) => {
+                setShowEndPicker(false); // Close the picker
+                if (selectedDate) setEndDate(selectedDate);
+              }}
+            />
+          )}
+        </View>
+        <TouchableOpacity onPress={applyFilter} style={styles.filterButton}>
+          <Text style={styles.filterButtonText}>Apply Filter</Text>
         </TouchableOpacity>
-        {selectedImage && (
-          <Image
-            source={{ uri: selectedImage }}
-            style={styles.image}
-            resizeMode="contain"
+      </View>
+
+      {/* Payments List */}
+      <View style={styles.recentPayments}>
+        {filteredPayments.length > 0 ? (
+          <FlatList
+            data={filteredPayments}
+            renderItem={renderItem}
+            keyExtractor={(item, index) => index.toString()}
+              showsVerticalScrollIndicator={true} // Show vertical scroll bar
+              contentContainerStyle={{ paddingBottom: 10 }} // Optional spacing
+            
           />
+        ) : (
+          <Text style={styles.paymentDate}>No payments found.</Text>
         )}
       </View>
-    </Modal>
-  </SafeAreaView>
+
+      {/* Image Modal */}
+      <Modal
+        visible={imageVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => toggleImage(null)}
+      >
+        <View style={styles.modalContainer}>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={() => toggleImage(null)}
+          >
+            <Text style={styles.closeButtonText}>Close</Text>
+          </TouchableOpacity>
+          {selectedImage && (
+            <Image
+              source={{ uri: selectedImage }}
+              style={styles.image}
+              resizeMode="contain"
+            />
+          )}
+        </View>
+      </Modal>
+    </SafeAreaView>
   );
 };
 
@@ -135,15 +206,45 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "flex-start",
   },
+  filterContainer: {
+    width: "90%",
+    marginVertical: 10,
+  },
+  datePickerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  filterLabel: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginRight: 10,
+  },
+  datePickerButton: {
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+    padding: 10,
+    flex: 1,
+  },
+  datePickerText: {
+    fontSize: 16,
+  },
+  filterButton: {
+    backgroundColor: "#1e90ff",
+    padding: 10,
+    borderRadius: 5,
+    alignItems: "center",
+  },
+  filterButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
   recentPayments: {
     marginTop: 20,
     width: "90%",
-  },
-  recentPaymentsTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 10,
-    textAlign: "center",
   },
   paymentItem: {
     flexDirection: "row",

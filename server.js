@@ -353,7 +353,6 @@ app.post("/add-payment", upload.single('screenshot'), async (req, res) => {
     });
 });
 
-
   
   
   app.get("/recent-payments", async (req, res) =>{
@@ -363,7 +362,8 @@ app.post("/add-payment", upload.single('screenshot'), async (req, res) => {
       return res.status(400).json({ error: "Client name is required" });
     }
  
- const query = "SELECT amount_paid, payment_date, screenshot_url FROM payments WHERE client_name = ? ORDER BY payment_date DESC";
+
+    const query = "SELECT amount_paid, payment_date, screenshot_url FROM payments WHERE client_name = ? ORDER BY payment_date DESC";
 
     conn.query(query, [clientName], (err, results) => {
       if (err) {

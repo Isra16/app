@@ -314,7 +314,7 @@ app.delete('/clients/:name', (req, res) => {
 
 
 app.post("/add-payment", upload.single('screenshot'), async (req, res) => {
-    const { clientName, amountPaid, paymentDate } = req.body;
+    const { clientName, amountPaid, paymentDate, arrears } = req.body;
 
     if (!clientName || !amountPaid || !paymentDate) {
         return res.status(400).json({ error: "Missing required fields" });
@@ -343,8 +343,8 @@ app.post("/add-payment", upload.single('screenshot'), async (req, res) => {
     }
 
     // Insert payment data into the database
-    const sql = "INSERT INTO payments (client_name, amount_paid, payment_date, screenshot_url) VALUES (?, ?, ?, ?)";
-    conn.query(sql, [clientName, amountPaid, paymentDate, screenshotUrl], (error, results) => {
+    const sql = "INSERT INTO payments (client_name, amount_paid, payment_date, arrears, screenshot_url) VALUES (?, ?, ?, ?, ?)";
+    conn.query(sql, [clientName, amountPaid, paymentDate, arrears || 0, screenshotUrl], (error, results) => {
         if (error) {
             console.error("Error inserting payment:", error);
             return res.status(500).json({ error: "An error occurred while adding the payment" });
@@ -352,6 +352,7 @@ app.post("/add-payment", upload.single('screenshot'), async (req, res) => {
         res.status(201).json({ message: "Payment added successfully", paymentId: results.insertId });
     });
 });
+
 
   
   

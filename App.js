@@ -29,7 +29,7 @@ const App = () => {
       >
         <Stack.Screen name="LogoScreen" component={LogoScreen} />
         <Stack.Screen name="UserPanel" component={UserPanel} />
-        <Stack.Screen name="Notification" component={Notifications} />
+        <Stack.Screen name="Notification" component={Notifications} options={{ headerShown: true }}/>
         <Stack.Screen name="RecentPaymentList" component={RecentPaymentList} options={{ headerShown: true }} />
         <Stack.Screen
           name="ChangePassword"

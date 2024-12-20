@@ -393,7 +393,7 @@ app.post("/add-payment", upload.single('screenshot'), async (req, res) => {
     }
   
     // SQL query to update the total amount for the specific client
-    conn.query= "  UPDATE clients SET total_amount = ?, arrears = ? WHERE name = ?"
+    conn.query= "  UPDATE client SET total_amount = ?, arrears = ? WHERE name = ?"
   
     // Calculate the arrears (if required to be stored separately)
     const arrears = totalAmount - req.body.amount; // You may adjust the logic if needed

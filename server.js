@@ -386,29 +386,31 @@ app.post("/add-payment", upload.single('screenshot'), async (req, res) => {
 
 
   app.post("/update-total-amount", (req, res) => {
-    const { clientName, totalAmount } = req.body;
-  
-    if (!clientName || !totalAmount) {
-      return res.status(400).json({ error: "Client name and total amount are required." });
-    }
-  
-    // SQL query to update the total amount for the specific client
-    conn.query= "  UPDATE client SET total_amount = ?, arrears = ? WHERE name = ?"
-  
-    // Calculate the arrears (if required to be stored separately)
-    const arrears = totalAmount - req.body.amount; // You may adjust the logic if needed
-  
-    // Execute the query
-    conn.query(updateQuery, [totalAmount, arrears, clientName], (err, result) => {
+  const { clientName, totalAmount, amount } = req.body;
+
+  if (!clientName || totalAmount == null || amount == null) {
+    return res.status(400).json({ error: "Client name, total amount, and amount are required." });
+  }
+
+  // Calculate the arrears (if required to be stored separately)
+  const arrears = totalAmount - amount; // You may adjust the logic if needed
+
+  // Use conn.query directly for the query
+  conn.query(
+    "UPDATE client SET total_amount = ?, arrears = ? WHERE name = ?",
+    [totalAmount, arrears, clientName],
+    (err, result) => {
       if (err) {
         console.error("Error updating total amount:", err);
         return res.status(500).json({ error: "Failed to update total amount." });
       }
-  
+
       if (result.affectedRows === 0) {
         return res.status(404).json({ error: "Client not found." });
       }
-  
+
       res.status(200).json({ message: "Total amount updated successfully." });
-    });
-  });
+    }
+  );
+});
+
